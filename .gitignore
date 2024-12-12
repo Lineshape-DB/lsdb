@@ -1,0 +1,6 @@
+*.o
+Make.conf
+Make.dep
+morph
+misc/
+

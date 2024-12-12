@@ -1,0 +1,10 @@
+CC = $(ARCH)gcc 
+DEBUG = -g
+LINT = -Wall -pedantic -Wextra
+OPTIMIZE = -O2
+#TCOVERAGE = -fprofile-arcs -ftest-coverage
+#PROFILING = -pg
+
+LIBS = -lgsl -lgslcblas -lm
+
+RM = rm -f
