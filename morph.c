@@ -110,6 +110,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -f <filename> input final spectrum [none]\n");
     fprintf(out, "  -o <filename> output spectrum to filename [stdout]\n");
     fprintf(out, "  -t <val|n>    set the morphing value (0 - 1) or grid size (n > 1)\n");
+    fprintf(out, "  -n            area-normalize output to unity\n");
     fprintf(out, "  -r            regularize the input spectra\n");
     fprintf(out, "  -d            enable some debugging\n");
     fprintf(out, "  -h            print this help\n");
@@ -130,11 +131,11 @@ int main(int argc, char **argv)
     gsl_interp_accel *acc_f, *acc_g, *acc_f_inv;
     gsl_spline *spline_f, *spline_g, *spline_f_inv;
 
-    bool debug = false, regularize = false;
+    bool debug = false, normalize = false, regularize = false;
 
     int opt;
 
-    while ((opt = getopt(argc, argv, "i:f:t:o:rdh")) != -1) {
+    while ((opt = getopt(argc, argv, "i:f:t:o:nrdh")) != -1) {
         switch (opt) {
         case 'i':
             fp_f = fopen(optarg, "rb");
@@ -159,6 +160,9 @@ int main(int argc, char **argv)
             break;
         case 't':
             t = atof(optarg);
+            break;
+        case 'n':
+            normalize = true;
             break;
         case 'r':
             regularize = true;
@@ -281,18 +285,22 @@ int main(int argc, char **argv)
     }
 
     for (int it = 0; it < nt; it++) {
-        double ti, norm, d, s;
+        double ti, nfactor, d, s;
         if (nt > 1) {
             ti = (double) it/(nt - 1);
         } else {
             ti = t;
         }
 
-        d     = (1 - ti)*d_f + ti*d_g;
-        s     = (1 - ti)*s_f + ti*s_g;
+        d = (1 - ti)*d_f + ti*d_g;
+        s = (1 - ti)*s_f + ti*s_g;
 
-        norm  = (1 - ti)     + ti*norm_g/norm_f;
-        norm /= s;
+        if (normalize) {
+            nfactor = 1/norm_f;
+        } else {
+            nfactor = (1 - ti) + ti*norm_g/norm_f;
+        }
+        nfactor /= s;
 
         for (int i = 0; i < NPOINTS; i++) {
             double T, dT_dx, r, x_dereg;
@@ -302,7 +310,7 @@ int main(int argc, char **argv)
             x_dereg = x[i]*s + d;
 
             if (T >= xf_min && T <= xf_max) {
-                r = norm*fabs(dT_dx)*gsl_spline_eval(spline_f, T, acc_f);
+                r = nfactor*fabs(dT_dx)*gsl_spline_eval(spline_f, T, acc_f);
             } else {
                 r = 0.0;
             }
