@@ -115,48 +115,34 @@ static void usage(const char *arg0, FILE *out)
 
 typedef struct {
     size_t np;
-    gsl_spline *spline_f, *spline_g, *spline_f_inv;
-    gsl_interp_accel *acc_f, *acc_g, *acc_f_inv;
-    double xf_min;
-    double xf_max;
-    double xg_min;
-    double xg_max;
+    gsl_spline *spline_f, *spline_M;
+    gsl_interp_accel *acc_f, *acc_M;
+    double xmin, xmax;
     double norm_f, norm_g;
-    double *x, *M, *dM_dx;
 } morph_t;
 
+typedef struct {
+    gsl_spline *spline_g, *spline_f_inv;
+    gsl_interp_accel *acc_g, *acc_f_inv;
+    double *F, *G;
+    double *x, *M;
+} morph_aux_t;
 
 void morph_free(morph_t *m)
 {
     if (m) {
-        if (m->x) {
-            free(m->x);
-        }
-        if (m->M) {
-            free(m->M);
-        }
-        if (m->dM_dx) {
-            free(m->dM_dx);
-        }
-
         if (m->acc_f) {
             gsl_interp_accel_free(m->acc_f);
         }
-        if (m->acc_g) {
-            gsl_interp_accel_free(m->acc_g);
-        }
-        if (m->acc_f_inv) {
-            gsl_interp_accel_free(m->acc_f_inv);
+        if (m->acc_M) {
+            gsl_interp_accel_free(m->acc_M);
         }
 
         if (m->spline_f) {
             gsl_spline_free(m->spline_f);
         }
-        if (m->spline_g) {
-            gsl_spline_free(m->spline_g);
-        }
-        if (m->spline_f_inv) {
-            gsl_spline_free(m->spline_f_inv);
+        if (m->spline_M) {
+            gsl_spline_free(m->spline_M);
         }
 
         free(m);
@@ -173,24 +159,20 @@ morph_t *morph_new(size_t np)
 
     m->np = np;
 
-    m->x     = malloc(np*sizeof(double));
-    m->M     = malloc(np*sizeof(double));
-    m->dM_dx = malloc(np*sizeof(double));
-    if (!m->x || !m->M || !m->dM_dx) {
+    m->spline_f = gsl_spline_alloc(gsl_interp_steffen, np);
+    if (!m->spline_f) {
+        morph_free(m);
+        return NULL;
+    }
+    m->spline_M = gsl_spline_alloc(gsl_interp_steffen, np);
+    if (!m->spline_M) {
         morph_free(m);
         return NULL;
     }
 
-    m->spline_f_inv = gsl_spline_alloc(gsl_interp_steffen, np);
-    if (!m->spline_f_inv) {
-        morph_free(m);
-        return NULL;
-    }
-
-    m->acc_f     = gsl_interp_accel_alloc();
-    m->acc_g     = gsl_interp_accel_alloc();
-    m->acc_f_inv = gsl_interp_accel_alloc();
-    if (!m->acc_f || !m->acc_g || !m->acc_f_inv) {
+    m->acc_f = gsl_interp_accel_alloc();
+    m->acc_M = gsl_interp_accel_alloc();
+    if (!m->acc_f || !m->acc_M) {
         morph_free(m);
         return NULL;
     }
@@ -198,102 +180,155 @@ morph_t *morph_new(size_t np)
     return m;
 }
 
+void morph_aux_free(morph_aux_t *m)
+{
+    if (m) {
+        if (m->x) {
+            free(m->x);
+        }
+        if (m->M) {
+            free(m->M);
+        }
+        if (m->F) {
+            free(m->F);
+        }
+        if (m->G) {
+            free(m->G);
+        }
+
+        if (m->acc_g) {
+            gsl_interp_accel_free(m->acc_g);
+        }
+        if (m->acc_f_inv) {
+            gsl_interp_accel_free(m->acc_f_inv);
+        }
+
+        if (m->spline_g) {
+            gsl_spline_free(m->spline_g);
+        }
+        if (m->spline_f_inv) {
+            gsl_spline_free(m->spline_f_inv);
+        }
+
+        free(m);
+    }
+}
+
+morph_aux_t *morph_aux_new(size_t np)
+{
+    morph_aux_t *ma = malloc(sizeof(morph_aux_t));
+    if (!ma) {
+        return NULL;
+    }
+    memset(ma, 0, sizeof(morph_aux_t));
+
+    ma->F = calloc(np, sizeof(double));
+    ma->G = calloc(np, sizeof(double));
+
+    ma->x = malloc(np*sizeof(double));
+    ma->M = malloc(np*sizeof(double));
+    if (!ma->x || !ma->M || !ma->F || !ma->G) {
+        morph_aux_free(ma);
+        return NULL;
+    }
+
+    ma->spline_f_inv = gsl_spline_alloc(gsl_interp_steffen, np);
+    if (!ma->spline_f_inv) {
+        morph_aux_free(ma);
+        return NULL;
+    }
+
+    ma->acc_g     = gsl_interp_accel_alloc();
+    ma->acc_f_inv = gsl_interp_accel_alloc();
+    if (!ma->acc_g || !ma->acc_f_inv) {
+        morph_aux_free(ma);
+        return NULL;
+    }
+
+    return ma;
+}
+
 bool morph_init(morph_t *m,
     const double *xf, const double *yf, size_t lenf,
     const double *xg, const double *yg, size_t leng)
 {
-    double *F, *G;
-    double xmin, xmax;
+    double xf_min, xf_max, xg_min, xg_max;
 
-    F = calloc(m->np, sizeof(double));
-    if (!F) {
+    morph_aux_t *ma = morph_aux_new(m->np);
+    if (!ma) {
         return false;
     }
-    G = calloc(m->np, sizeof(double));
-    if (!G) {
-        free(F);
+    ma->spline_g = gsl_spline_alloc(gsl_interp_steffen, leng);
+    if (!ma->spline_g) {
+        morph_aux_free(ma);
         return false;
     }
+    gsl_spline_init(ma->spline_g, xg, yg, leng);
 
     if (m->spline_f) {
         gsl_spline_free(m->spline_f);
     }
     m->spline_f = gsl_spline_alloc(gsl_interp_steffen, lenf);
     if (!m->spline_f) {
-        free(F);
-        free(G);
+        morph_aux_free(ma);
         return false;
     }
-    if (m->spline_g) {
-        gsl_spline_free(m->spline_g);
-    }
-    m->spline_g = gsl_spline_alloc(gsl_interp_steffen, leng);
-    if (!m->spline_g) {
-        free(F);
-        free(G);
-        gsl_spline_free(m->spline_f);
-        return false;
-    }
-
     gsl_spline_init(m->spline_f, xf, yf, lenf);
-    gsl_spline_init(m->spline_g, xg, yg, leng);
 
-    m->xf_min = xf[0];
-    m->xf_max = xf[lenf - 1];
-    m->xg_min = xg[0];
-    m->xg_max = xg[leng - 1];
-    xmin = MAX2(m->xf_min, m->xg_min);
-    xmax = MIN2(m->xf_max, m->xg_max);
+    xf_min = xf[0];
+    xf_max = xf[lenf - 1];
+    xg_min = xg[0];
+    xg_max = xg[leng - 1];
+    m->xmin = MAX2(xf_min, xg_min);
+    m->xmax = MIN2(xf_max, xg_max);
 
-    /* calculate CDFs */
     for (unsigned int i = 0; i < m->np; i++) {
-        m->x[i] = xmin + i*(xmax - xmin)/(m->np - 1);
-        if (m->x[i] > xmax) {
-            m->x[i] = xmax;
+        double x = m->xmin + i*(m->xmax - m->xmin)/(m->np - 1);
+        if (x > m->xmax) {
+            x = m->xmax;
         }
 
-        F[i] = gsl_spline_eval_integ(m->spline_f, xmin, m->x[i], m->acc_f);
-        G[i] = gsl_spline_eval_integ(m->spline_g, xmin, m->x[i], m->acc_g);
+        /* store the grid */
+        ma->x[i] = x;
+
+        /* calculate CDFs */
+        ma->F[i] = gsl_spline_eval_integ(m->spline_f, m->xmin, x, m->acc_f);
+        ma->G[i] = gsl_spline_eval_integ(ma->spline_g, m->xmin, x, ma->acc_g);
     }
 
     /* normalize CDFs to unity */
-    m->norm_f = F[m->np - 1];
-    m->norm_g = G[m->np - 1];
+    m->norm_f = ma->F[m->np - 1];
+    m->norm_g = ma->G[m->np - 1];
     for (unsigned int i = 0; i < m->np; i++) {
-        F[i] /= m->norm_f;
-        G[i] /= m->norm_g;
+        ma->F[i] /= m->norm_f;
+        ma->G[i] /= m->norm_g;
     }
 
-    gsl_spline_init(m->spline_f_inv, F, m->x, m->np);
+    /* prepare spline for the quantile of F */
+    gsl_spline_init(ma->spline_f_inv, ma->F, ma->x, m->np);
 
-    double m_prev = 0.0;
+    /* calculate M on the grid */
     for (unsigned int i = 0; i < m->np; i++) {
-        m->M[i] = gsl_spline_eval(m->spline_f_inv, G[i], m->acc_f_inv);
-        if (i == 0) {
-            m->dM_dx[i] = 0.0;
-        } else {
-            m->dM_dx[i] = (m->M[i] - m_prev)/(m->x[i] - m->x[i - 1]);
-        }
-        m_prev = m->M[i];
-#if 0
-        if (debug) {
-            fprintf(stderr, "%g %g %g %g %g\n",
-                m->x[i], F[i], G[i], m->M[i], m->dM_dx[i]);
-        }
-#endif
+        ma->M[i] = gsl_spline_eval(ma->spline_f_inv, ma->G[i], ma->acc_f_inv);
     }
 
-    free(F);
-    free(G);
+    /* prepare spline for M */
+    gsl_spline_init(m->spline_M, ma->x, ma->M, m->np);
+
+    morph_aux_free(ma);
 
     return true;
 }
 
-double morph_eval(const morph_t *m, double t, size_t i, bool normalize)
+double morph_eval(const morph_t *m, double t, double x, bool normalize)
 {
-    double nfactor, T, dT_dx, r;
-    T     = (1 - t)*m->x[i] + t*m->M[i];
-    dT_dx = (1 - t)         + t*m->dM_dx[i];
+    double nfactor, T, M, dM_dx, dT_dx, r;
+
+    M     = gsl_spline_eval(m->spline_M, x, m->acc_M);
+    dM_dx = gsl_spline_eval_deriv(m->spline_M, x, m->acc_M);
+
+    T     = (1 - t)*x + t*M;
+    dT_dx = (1 - t)   + t*dM_dx;
 
     if (normalize) {
         nfactor = 1/m->norm_f;
@@ -302,7 +337,7 @@ double morph_eval(const morph_t *m, double t, size_t i, bool normalize)
         nfactor = (1 - t) + t*m->norm_g/m->norm_f;
     }
 
-    if (T >= m->xf_min && T <= m->xf_max) {
+    if (T >= m->xmin && T <= m->xmax) {
         r = nfactor*fabs(dT_dx)*gsl_spline_eval(m->spline_f, T, m->acc_f);
     } else {
         r = 0.0;
@@ -423,7 +458,6 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    /* these are already copied to the spline objects */
     free(xf);
     free(yf);
     free(xg);
@@ -440,10 +474,12 @@ int main(int argc, char **argv)
         d = (1 - ti)*d_f + ti*d_g;
         s = (1 - ti)*s_f + ti*s_g;
 
-        for (unsigned int i = 0; i < m->np; i++) {
-            double r = morph_eval(m, ti, i, normalize)/s;
+        for (unsigned int i = 0; i < NPOINTS; i++) {
+            double x = m->xmin + i*(m->xmax - m->xmin)/(m->np - 1);
 
-            double x_dereg = m->x[i]*s + d;
+            double r = morph_eval(m, ti, x, normalize)/s;
+
+            double x_dereg = x*s + d;
 
             fprintf(fp_out, "%g %g\n", x_dereg, r);
         }
