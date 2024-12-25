@@ -2,14 +2,14 @@ include Make.conf
 
 PROGS =	morph$(EXE_EXT)
 
-CSRCS = morph.c
-#CHDRS = morph.h
+CSRCS = libmorph.c morph.c
+CHDRS = morph.h
 
 COBJS  = ${CSRCS:.c=.o}
 
 SRCS  = $(CSRCS)
 
-CFLAGS = $(DEBUG) $(LINT) $(OPTIMIZE) $(TCOVERAGE) $(PROFILING)
+CFLAGS = $(DEBUG) $(LINT) $(OPTIMIZE) $(TCOVERAGE) $(PROFILING) -I .
 LDFLAGS = $(DEBUG) 
 
 all: $(PROGS)
