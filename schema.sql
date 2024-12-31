@@ -1,0 +1,51 @@
+CREATE TABLE lsdb (
+    property TEXT UNIQUE NOT NULL,
+    value INTEGER NOT NULL
+);
+
+CREATE TABLE models (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name  TEXT UNIQUE NOT NULL,
+    descr TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE environments (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    name  TEXT UNIQUE NOT NULL,
+    descr TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE radiators (
+    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    symbol TEXT    UNIQUE NOT NULL,
+    anum   INTEGER NOT NULL,
+    mass   REAL    NOT NULL,
+    zsp    INTEGER NOT NULL,
+    UNIQUE (anum, mass, zsp)
+);
+
+CREATE TABLE lines (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    rid    INTEGER NOT NULL REFERENCES radiators(id) ON DELETE CASCADE,
+    name   TEXT NOT NULL,
+    energy REAL NOT NULL,
+    UNIQUE (rid, name)
+);
+
+CREATE TABLE datasets (
+    id  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    lid INTEGER NOT NULL REFERENCES lines(id) ON DELETE CASCADE,
+    eid INTEGER NOT NULL REFERENCES environments(id) ON DELETE CASCADE,
+    mid INTEGER NOT NULL REFERENCES models(id) ON DELETE CASCADE,
+    n   REAL NOT NULL,
+    T   REAL NOT NULL,
+    UNIQUE (lid, eid, mid, n, T)
+);
+
+CREATE TABLE data (
+    did INTEGER NOT NULL REFERENCES datasets(id) ON DELETE CASCADE,
+    x   REAL NOT NULL,
+    y   REAL NOT NULL
+);
+
+INSERT INTO lsdb (property, value) VALUES ('format', 1);

@@ -2,6 +2,11 @@
 Make.conf
 Make.dep
 morph
+lsdbu
+schema.i
 tags
 misc/
+.gdb_history
+*.db
+
 

@@ -5,6 +5,6 @@ OPTIMIZE = -O2
 #TCOVERAGE = -fprofile-arcs -ftest-coverage
 #PROFILING = -pg
 
-LIBS = -lgsl -lgslcblas -lm
+LIBS = -lgsl -lgslcblas -lm -lsqlite3
 
 RM = rm -f

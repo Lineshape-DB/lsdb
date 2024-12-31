@@ -1,21 +1,28 @@
 include Make.conf
 
-PROGS =	morph$(EXE_EXT)
+PROGS  = morph$(EXE_EXT) lsdbu$(EXE_EXT)
 
-CSRCS = libmorph.c morph.c
-CHDRS = morph.h
+MCSRCS = libmorph.c morph.c
+LCSRCS = lsdb.c lsdbu.c
 
-COBJS  = ${CSRCS:.c=.o}
+CHDRS  = morph.h morphP.h lsdb.h
 
-SRCS  = $(CSRCS)
+MCOBJS = ${MCSRCS:.c=.o}
+LCOBJS = ${LCSRCS:.c=.o}
+
+SRCS   = $(MCSRCS) $(LCSRCS)
+COBJS  = $(MCOBJS) $(LCOBJS)
 
 CFLAGS = $(DEBUG) $(LINT) $(OPTIMIZE) $(TCOVERAGE) $(PROFILING) -I .
 LDFLAGS = $(DEBUG) 
 
 all: $(PROGS)
 
-morph$(EXE_EXT): $(COBJS)
-	$(CC) $(LDFLAGS) -o $@ $(COBJS) $(LIBS)
+morph$(EXE_EXT): $(MCOBJS)
+	$(CC) $(LDFLAGS) -o $@ $(MCOBJS) $(LIBS)
+
+lsdbu$(EXE_EXT): $(LCOBJS)
+	$(CC) $(LDFLAGS) -o $@ $(LCOBJS) $(LIBS)
 
 include Make.dep
 
@@ -25,8 +32,11 @@ Make.dep: $(SRCS)
 	@$(CC) $(CFLAGS) -MM $(SRCS) >> $@
 	@echo "done"
 
+schema.i : schema.sql
+	./sql2cstr.sh < $? > $@
+
 clean:
-	$(RM) $(PROG) $(COBJS) \
+	$(RM) $(PROGS) $(COBJS) \
 	Make.dep tags ChangeLog *.bak \
 	*.bb *.bbg *.da *.gcda *.gcno *.gcov
 
