@@ -25,19 +25,19 @@ struct _lsdb_t {
 typedef struct _lsdb_t lsdb_t;
 
 typedef struct {
-    unsigned long int id;
+    unsigned long id;
     const char *name;
     const char *descr;
 } lsdb_model_data_t;
 
 typedef struct {
-    unsigned long int id;
+    unsigned long id;
     const char *name;
     const char *descr;
 } lsdb_environment_data_t;
 
 typedef struct {
-    unsigned long int id;
+    unsigned long id;
     const char *sym;
     unsigned int anum;
     double mass;
@@ -45,15 +45,15 @@ typedef struct {
 } lsdb_radiator_data_t;
 
 typedef struct {
-    unsigned long int id;
+    unsigned long id;
     const char *name;
     double energy;
 } lsdb_line_data_t;
 
 typedef struct {
-    unsigned long int id;
-    unsigned long int mid;
-    unsigned long int eid;
+    unsigned long id;
+    unsigned long mid;
+    unsigned long eid;
     double n;
     double T;
 } lsdb_dataset_data_t;
@@ -95,14 +95,14 @@ int lsdb_get_radiators(const lsdb_t *lsdb,
 
 int lsdb_add_line(lsdb_t *lsdb,
     unsigned int rid, const char *name, double energy);
-int lsdb_get_lines(const lsdb_t *lsdb, unsigned long int rid,
+int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
     lsdb_line_sink_t sink, void *udata);
 
 int lsdb_add_dataset(lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
     double n, double T,
     const double *x, const double *y, size_t len);
-int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long int lid,
+int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
     lsdb_dataset_sink_t sink, void *udata);
 
 lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did);

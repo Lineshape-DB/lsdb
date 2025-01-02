@@ -403,7 +403,7 @@ int lsdb_add_line(lsdb_t *lsdb,
     return lid;
 }
 
-int lsdb_get_lines(const lsdb_t *lsdb, unsigned long int rid,
+int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
     lsdb_line_sink_t sink, void *udata)
 {
     sqlite3_stmt *stmt;
@@ -515,7 +515,7 @@ int lsdb_add_dataset(lsdb_t *lsdb,
     return did;
 }
 
-int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long int lid,
+int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
     lsdb_dataset_sink_t sink, void *udata)
 {
     sqlite3_stmt *stmt;
