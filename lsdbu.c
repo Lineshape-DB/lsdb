@@ -182,8 +182,8 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -e <id>               set environment ID [none]\n");
     fprintf(out, "  -r <id>               set radiator ID [none]\n");
     fprintf(out, "  -l <id>               set line ID [none]\n");
-    fprintf(out, "  -n <n_e>              set electron density to n_e/cc [0]\n");
-    fprintf(out, "  -n <T>                set temperature to T eV [0]\n");
+    fprintf(out, "  -n <n>                set electron density to n/cc [0]\n");
+    fprintf(out, "  -T <T>                set temperature to T eV [0]\n");
     fprintf(out, "  -I                    initialize the DB\n");
     fprintf(out, "  -M <name[,descr]>     add a model\n");
     fprintf(out, "  -E <name[,descr]>     add an environment\n");
