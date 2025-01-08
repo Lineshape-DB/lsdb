@@ -19,6 +19,8 @@ typedef struct {
     unsigned long eid;
     unsigned long rid;
     unsigned long lid;
+    double        n;
+    double        T;
 } lsdbu_t;
 
 static int read_in(FILE *fp, double **xap, double **yap, size_t *lenp)
@@ -80,7 +82,9 @@ static int dataset_sink(const lsdb_t *lsdb,
     (void)(lsdb);
 
     if ((lsdbu->eid != 0 && cbdata->eid != lsdbu->eid) ||
-        (lsdbu->mid != 0 && cbdata->mid != lsdbu->mid)) {
+        (lsdbu->mid != 0 && cbdata->mid != lsdbu->mid) ||
+        (lsdbu->n   >  0 && cbdata->n   != lsdbu->n)   ||
+        (lsdbu->T   >  0 && cbdata->T   != lsdbu->T)) {
         return LSDB_SUCCESS;
     }
 
@@ -178,12 +182,14 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -e <id>               set environment ID [none]\n");
     fprintf(out, "  -r <id>               set radiator ID [none]\n");
     fprintf(out, "  -l <id>               set line ID [none]\n");
+    fprintf(out, "  -n <n_e>              set electron density to n_e/cc [0]\n");
+    fprintf(out, "  -n <T>                set temperature to T eV [0]\n");
     fprintf(out, "  -I                    initialize the DB\n");
     fprintf(out, "  -M <name[,descr]>     add a model\n");
     fprintf(out, "  -E <name[,descr]>     add an environment\n");
     fprintf(out, "  -R <sym,A,Zsp,M>      add a radiator\n");
     fprintf(out, "  -L <name,w0>          add a line\n");
-    fprintf(out, "  -D <n,T,filename>     add a dataset\n");
+    fprintf(out, "  -D <filename>         add a dataset\n");
     fprintf(out, "  -h                    print this help\n");
 }
 
@@ -203,7 +209,7 @@ int main(int argc, char **argv)
     const char *mname = NULL, *ename = NULL, *mdescr = "", *edescr = "";
     const char *symbol = NULL, *lname = NULL;
     int anum = 0, zsp = 0;
-    double mass = 0, w0 = 0, n_e = 0, T = 0, *x = NULL, *y = NULL;
+    double mass = 0, w0 = 0, *x = NULL, *y = NULL;
     size_t len;
 
     int opt;
@@ -211,7 +217,7 @@ int main(int argc, char **argv)
     memset(lsdbu, 0, sizeof(lsdbu_t));
     lsdbu->fp_out = stdout;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:IM:E:R:L:D:h")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:IM:E:R:L:D:h")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -261,6 +267,20 @@ int main(int argc, char **argv)
             if (!lsdbu->fp_out) {
                 fprintf(stderr, "Failed openning file %s for writing\n",
                     optarg);
+                exit(1);
+            }
+            break;
+        case 'n':
+            lsdbu->n = atof(optarg);
+            if (lsdbu->n <= 0) {
+                fprintf(stderr, "Density must be positive\n");
+                exit(1);
+            }
+            break;
+        case 'T':
+            lsdbu->T = atof(optarg);
+            if (lsdbu->T <= 0) {
+                fprintf(stderr, "Temperature must be positive\n");
                 exit(1);
             }
             break;
@@ -355,29 +375,10 @@ int main(int argc, char **argv)
             break;
         case 'D':
             action = LSDBU_ACTION_ADD_DATA;
-            token = strtok(optarg, ",");
-            ntoken = 1;
-            while (token != NULL) {
-                switch (ntoken) {
-                case 1:
-                    n_e = atof(token);
-                    break;
-                case 2:
-                    T = atof(token);
-                    break;
-                case 3:
-                    fp_f = fopen(token, "rb");
-                    if (!fp_f) {
-                        fprintf(stderr, "Failed openning file %s\n", token);
-                        exit(1);
-                    }
-                    break;
-                default:
-                    usage(argv[0], stderr);
-                    exit(1);
-                }
-                token = strtok(NULL, ",");
-                ntoken++;
+            fp_f = fopen(optarg, "rb");
+            if (!fp_f) {
+                fprintf(stderr, "Failed openning file %s\n", optarg);
+                exit(1);
             }
             break;
         case 'h':
@@ -458,13 +459,21 @@ int main(int argc, char **argv)
         }
     } else
     if (action == LSDBU_ACTION_ADD_DATA) {
+        if (lsdbu->lid == 0) {
+            fprintf(stderr, "Line ID must be defined\n");
+            OK = false;
+        } else
         if (lsdbu->mid == 0 || lsdbu->eid == 0) {
             fprintf(stderr, "Environment and model IDs must be defined\n");
             OK = false;
         } else
+        if (lsdbu->n == 0.0 || lsdbu->T == 0.0) {
+            fprintf(stderr, "Density and temperature must be defined\n");
+            OK = false;
+        } else
         if (read_in(fp_f, &x, &y, &len) == LSDB_SUCCESS) {
             int did = lsdb_add_dataset(lsdb, lsdbu->mid, lsdbu->eid, lsdbu->lid,
-                n_e, T, x, y, len);
+                lsdbu->n, lsdbu->T, x, y, len);
             if (did <= 0) {
                 fprintf(stderr, "Adding dataset failed\n");
                 OK = false;
