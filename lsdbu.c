@@ -96,6 +96,10 @@ static int line_sink(const lsdb_t *lsdb,
 {
     lsdbu_t *lsdbu = udata;
 
+    if (lsdbu->lid != 0 && cbdata->id != lsdbu->lid) {
+        return LSDB_SUCCESS;
+    }
+
     fprintf(lsdbu->fp_out, "    id = %lu: \"%s\" (%g cm^-1 => %g eV)\n",
         cbdata->id, cbdata->name, cbdata->energy, cbdata->energy/8065.5);
 
@@ -109,6 +113,10 @@ static int radiator_sink(const lsdb_t *lsdb,
     lsdb_radiator_data_t *cbdata, void *udata)
 {
     lsdbu_t *lsdbu = udata;
+
+    if (lsdbu->rid != 0 && cbdata->id != lsdbu->rid) {
+        return LSDB_SUCCESS;
+    }
 
     fprintf(lsdbu->fp_out, "  id = %lu: \"%s\" (A = %d, Zsp = %d, mass = %g)\n",
         cbdata->id, cbdata->sym, cbdata->anum, cbdata->zsp, cbdata->mass);
