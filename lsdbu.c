@@ -17,6 +17,8 @@ typedef struct {
     FILE *fp_out;
     unsigned long mid;
     unsigned long eid;
+    unsigned long rid;
+    unsigned long lid;
 } lsdbu_t;
 
 static int read_in(FILE *fp, double **xap, double **yap, size_t *lenp)
@@ -166,12 +168,14 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -o <filename>         output spectrum to filename [stdout]\n");
     fprintf(out, "  -m <id>               set model ID [none]\n");
     fprintf(out, "  -e <id>               set environment ID [none]\n");
+    fprintf(out, "  -r <id>               set radiator ID [none]\n");
+    fprintf(out, "  -l <id>               set line ID [none]\n");
     fprintf(out, "  -I                    initialize the DB\n");
     fprintf(out, "  -M <name[,descr]>     add a model\n");
     fprintf(out, "  -E <name[,descr]>     add an environment\n");
     fprintf(out, "  -R <sym,A,Zsp,M>      add a radiator\n");
-    fprintf(out, "  -L <rid,name,w0>      add a line\n");
-    fprintf(out, "  -D <lid,n,T,filename> add a dataset\n");
+    fprintf(out, "  -L <name,w0>      add a line\n");
+    fprintf(out, "  -D <n,T,filename> add a dataset\n");
     fprintf(out, "  -h                    print this help\n");
 }
 
@@ -185,7 +189,7 @@ int main(int argc, char **argv)
     lsdb_t *lsdb;
     bool OK = true;
     FILE *fp_f = NULL;
-    long int mid = 0, eid = 0, did = 0, rid = 0, lid = 0;
+    long int id = 0, did = 0;
     const char *token;
     int ntoken = 0;
     const char *mname = NULL, *ename = NULL, *mdescr = "", *edescr = "";
@@ -199,7 +203,7 @@ int main(int argc, char **argv)
     memset(lsdbu, 0, sizeof(lsdbu_t));
     lsdbu->fp_out = stdout;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:IM:E:R:L:D:h")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:IM:E:R:L:D:h")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -213,20 +217,36 @@ int main(int argc, char **argv)
             }
             break;
         case 'm':
-            mid = atoi(optarg);
-            if (mid <= 0) {
+            id = atoi(optarg);
+            if (id <= 0) {
                 fprintf(stderr, "ID must be positive\n");
                 exit(1);
             }
-            lsdbu->mid = mid;
+            lsdbu->mid = id;
             break;
         case 'e':
-            eid = atoi(optarg);
-            if (eid <= 0) {
+            id = atoi(optarg);
+            if (id <= 0) {
                 fprintf(stderr, "ID must be positive\n");
                 exit(1);
             }
-            lsdbu->eid = eid;
+            lsdbu->eid = id;
+            break;
+        case 'r':
+            id = atoi(optarg);
+            if (id <= 0) {
+                fprintf(stderr, "ID must be positive\n");
+                exit(1);
+            }
+            lsdbu->rid = id;
+            break;
+        case 'l':
+            id = atoi(optarg);
+            if (id <= 0) {
+                fprintf(stderr, "ID must be positive\n");
+                exit(1);
+            }
+            lsdbu->lid = id;
             break;
         case 'o':
             lsdbu->fp_out = fopen(optarg, "wb");
@@ -312,12 +332,9 @@ int main(int argc, char **argv)
             while (token != NULL) {
                 switch (ntoken) {
                 case 1:
-                    rid = atoi(token);
-                    break;
-                case 2:
                     lname = token;
                     break;
-                case 3:
+                case 2:
                     w0 = atof(token);
                     break;
                 default:
@@ -335,15 +352,12 @@ int main(int argc, char **argv)
             while (token != NULL) {
                 switch (ntoken) {
                 case 1:
-                    lid = atoi(token);
-                    break;
-                case 2:
                     n_e = atof(token);
                     break;
-                case 3:
+                case 2:
                     T = atof(token);
                     break;
-                case 4:
+                case 3:
                     fp_f = fopen(token, "rb");
                     if (!fp_f) {
                         fprintf(stderr, "Failed openning file %s\n", token);
@@ -422,15 +436,15 @@ int main(int argc, char **argv)
         }
     } else
     if (action == LSDBU_ACTION_ADD_RADIATOR) {
-        int rid = lsdb_add_radiator(lsdb, symbol, anum, mass, zsp);
-        if (rid <= 0) {
+        id = lsdb_add_radiator(lsdb, symbol, anum, mass, zsp);
+        if (id <= 0) {
             fprintf(stderr, "Adding radiators failed\n");
             OK = false;
         }
     } else
     if (action == LSDBU_ACTION_ADD_LINE) {
-        int lid = lsdb_add_line(lsdb, rid, lname, w0);
-        if (lid <= 0) {
+        id = lsdb_add_line(lsdb, lsdbu->rid, lname, w0);
+        if (id <= 0) {
             fprintf(stderr, "Adding line failed\n");
             OK = false;
         }
@@ -441,7 +455,7 @@ int main(int argc, char **argv)
             OK = false;
         } else
         if (read_in(fp_f, &x, &y, &len) == LSDB_SUCCESS) {
-            int did = lsdb_add_dataset(lsdb, lsdbu->mid, lsdbu->eid, lid,
+            int did = lsdb_add_dataset(lsdb, lsdbu->mid, lsdbu->eid, lsdbu->lid,
                 n_e, T, x, y, len);
             if (did <= 0) {
                 fprintf(stderr, "Adding dataset failed\n");
