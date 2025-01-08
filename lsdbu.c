@@ -173,7 +173,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "Available options:\n");
     fprintf(out, "  -i                    print basic information about the DB\n");
     fprintf(out, "  -d <id>               fetch dataset by its ID\n");
-    fprintf(out, "  -o <filename>         output spectrum to filename [stdout]\n");
+    fprintf(out, "  -o <filename>         output to filename [stdout]\n");
     fprintf(out, "  -m <id>               set model ID [none]\n");
     fprintf(out, "  -e <id>               set environment ID [none]\n");
     fprintf(out, "  -r <id>               set radiator ID [none]\n");
@@ -182,8 +182,8 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -M <name[,descr]>     add a model\n");
     fprintf(out, "  -E <name[,descr]>     add an environment\n");
     fprintf(out, "  -R <sym,A,Zsp,M>      add a radiator\n");
-    fprintf(out, "  -L <name,w0>      add a line\n");
-    fprintf(out, "  -D <n,T,filename> add a dataset\n");
+    fprintf(out, "  -L <name,w0>          add a line\n");
+    fprintf(out, "  -D <n,T,filename>     add a dataset\n");
     fprintf(out, "  -h                    print this help\n");
 }
 
