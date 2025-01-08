@@ -1,7 +1,7 @@
 *.o
 Make.conf
 Make.dep
-morph
+morphu
 lsdbu
 schema.i
 tags

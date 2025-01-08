@@ -1,8 +1,8 @@
 include Make.conf
 
-PROGS  = morph$(EXE_EXT) lsdbu$(EXE_EXT)
+PROGS  = morphu$(EXE_EXT) lsdbu$(EXE_EXT)
 
-MCSRCS = libmorph.c morph.c
+MCSRCS = libmorph.c morphu.c
 LCSRCS = lsdb.c lsdbu.c
 
 CHDRS  = morph.h morphP.h lsdb.h
@@ -18,7 +18,7 @@ LDFLAGS = $(DEBUG)
 
 all: $(PROGS)
 
-morph$(EXE_EXT): $(MCOBJS)
+morphu$(EXE_EXT): $(MCOBJS)
 	$(CC) $(LDFLAGS) -o $@ $(MCOBJS) $(LIBS)
 
 lsdbu$(EXE_EXT): $(LCOBJS)
