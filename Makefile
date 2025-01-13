@@ -2,7 +2,7 @@ include Make.conf
 
 PROGS  = morphu$(EXE_EXT) lsdbu$(EXE_EXT)
 
-MCSRCS = libmorph.c morphu.c
+MCSRCS = morph.c morphu.c
 LCSRCS = lsdb.c lsdbu.c
 
 CHDRS  = morph.h morphP.h lsdb.h
