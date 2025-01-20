@@ -110,4 +110,10 @@ void lsdb_dataset_free(lsdb_dataset_t *ds);
 
 lsdb_dataset_t *lsdb_dataset_new(double n, double T, size_t len);
 
+int lsdb_get_closest_dids(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double n, double T,
+    unsigned long *did1, unsigned long *did2,
+    unsigned long *did3, unsigned long *did4);
+
 #endif /* LSDB_H */

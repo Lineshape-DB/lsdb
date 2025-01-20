@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <lsdb.h>
 
 #include "schema.i"
@@ -637,4 +638,83 @@ lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did)
     sqlite3_finalize(stmt);
 
     return ds;
+}
+
+/*
+ * Find nearest four datasets (the list can be partly or fully degenerate)
+ * In the (n, T) plane, did1...did4 correspond to the bottom-left, bottom-right,
+ * top-right, and top-left, respectively
+ */
+int lsdb_get_closest_dids(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double n, double T,
+    unsigned long *did1, unsigned long *did2,
+    unsigned long *did3, unsigned long *did4)
+{
+    const char *sql;
+    sqlite3_stmt *stmt;
+    bool found = false;
+    int rc;
+
+    sql = "SELECT id, (n - ?)/? AS dn, (T - ?)/? AS dT" \
+          " FROM datasets WHERE mid = ? AND eid = ? AND lid = ?" \
+          " ORDER BY dn*dn + dT*dT";
+
+    sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
+
+    sqlite3_bind_double(stmt, 1, n);
+    sqlite3_bind_double(stmt, 2, n);
+    sqlite3_bind_double(stmt, 3, T);
+    sqlite3_bind_double(stmt, 4, T);
+    sqlite3_bind_int(stmt, 5, mid);
+    sqlite3_bind_int(stmt, 6, eid);
+    sqlite3_bind_int(stmt, 7, lid);
+
+    *did1 = *did2 = *did3 = *did4 = 0;
+
+    do {
+        unsigned int id;
+        double dn, dT;
+
+        rc = sqlite3_step(stmt);
+        switch (rc) {
+        case SQLITE_DONE:
+        case SQLITE_OK:
+            break;
+        case SQLITE_ROW:
+            id  = sqlite3_column_int64 (stmt, 0);
+            dn  = sqlite3_column_double(stmt, 1);
+            dT  = sqlite3_column_double(stmt, 2);
+
+            if (*did1 == 0 && dn <= 0 && dT <= 0) {
+                *did1 = id;
+            }
+            if (*did2 == 0 && dn >= 0 && dT <= 0) {
+                *did2 = id;
+            }
+            if (*did3 == 0 && dn >= 0 && dT >= 0) {
+                *did3 = id;
+            }
+            if (*did4 == 0 && dn <= 0 && dT >= 0) {
+                *did4 = id;
+            }
+
+            if (*did1 != 0 && *did2 != 0 && *did3 != 0 && *did4 != 0) {
+                found = true;
+            }
+
+            break;
+        default:
+            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            break;
+        }
+    } while (rc == SQLITE_ROW && !found);
+
+    sqlite3_finalize(stmt);
+
+    if (found) {
+        return LSDB_SUCCESS;
+    } else {
+        return LSDB_FAILURE;
+    }
 }
