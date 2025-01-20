@@ -1,7 +1,9 @@
 #include <stdbool.h>
 #include <getopt.h>
+#include <math.h>
 
 #include <lsdb.h>
+#include <morph.h>
 
 #define LSDBU_ACTION_NONE           0
 #define LSDBU_ACTION_INFO           1
@@ -12,6 +14,7 @@
 #define LSDBU_ACTION_ADD_LINE       6
 #define LSDBU_ACTION_ADD_DATA       7
 #define LSDBU_ACTION_GET_DATA       8
+#define LSDBU_ACTION_INTERPOLATE    9
 
 typedef struct {
     FILE *fp_out;
@@ -184,6 +187,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -l <id>               set line ID [none]\n");
     fprintf(out, "  -n <n>                set electron density to n/cc [0]\n");
     fprintf(out, "  -T <T>                set temperature to T eV [0]\n");
+    fprintf(out, "  -p                    print interpolated lineshape\n");
     fprintf(out, "  -I                    initialize the DB\n");
     fprintf(out, "  -M <name[,descr]>     add a model\n");
     fprintf(out, "  -E <name[,descr]>     add an environment\n");
@@ -217,7 +221,7 @@ int main(int argc, char **argv)
     memset(lsdbu, 0, sizeof(lsdbu_t));
     lsdbu->fp_out = stdout;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:IM:E:R:L:D:h")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pIM:E:R:L:D:h")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -283,6 +287,9 @@ int main(int argc, char **argv)
                 fprintf(stderr, "Temperature must be positive\n");
                 exit(1);
             }
+            break;
+        case 'p':
+            action = LSDBU_ACTION_INTERPOLATE;
             break;
         case 'I':
             action = LSDBU_ACTION_INIT;
@@ -402,6 +409,7 @@ int main(int argc, char **argv)
     switch (action) {
     case LSDBU_ACTION_INFO:
     case LSDBU_ACTION_GET_DATA:
+    case LSDBU_ACTION_INTERPOLATE:
         db_access = LSDB_OPEN_RO;
         break;
     case LSDBU_ACTION_INIT:
@@ -506,8 +514,131 @@ int main(int argc, char **argv)
 
             lsdb_dataset_free(ds);
         } else {
-            fprintf(stderr, "Failed detching dataset %ld\n", did);
+            fprintf(stderr, "Failed fetching dataset %ld\n", did);
             OK = false;
+        }
+    } else
+    if (action == LSDBU_ACTION_INTERPOLATE) {
+        if (lsdbu->lid == 0) {
+            fprintf(stderr, "Line ID must be defined\n");
+            OK = false;
+        } else
+        if (lsdbu->mid == 0 || lsdbu->eid == 0) {
+            fprintf(stderr, "Environment and model IDs must be defined\n");
+            OK = false;
+        } else
+        if (lsdbu->n == 0.0 || lsdbu->T == 0.0) {
+            fprintf(stderr, "Density and temperature must be defined\n");
+            OK = false;
+        } else {
+            long unsigned did1, did2, did3, did4;
+            int rc;
+            rc = lsdb_get_closest_dids(lsdb, lsdbu->mid, lsdbu->eid, lsdbu->lid,
+                lsdbu->n, lsdbu->T, &did1, &did2, &did3, &did4);
+            if (rc == LSDB_SUCCESS) {
+                lsdb_dataset_t *ds1, *ds2, *ds3, *ds4;
+
+                fprintf(stderr, "Interpolating over datasets %lu,%lu,%lu,%lu\n",
+                    did1, did2, did3, did4);
+
+                ds1 = lsdb_get_dataset(lsdb, did1);
+                ds2 = lsdb_get_dataset(lsdb, did2);
+                ds3 = lsdb_get_dataset(lsdb, did3);
+                ds4 = lsdb_get_dataset(lsdb, did4);
+
+                if (ds1 && ds2 && ds3 && ds4) {
+                    double n1 = ds1->n, n2 = ds2->n, n3 = ds3->n, n4 = ds4->n;
+                    double T1 = ds1->T, T2 = ds2->T, T3 = ds3->T, T4 = ds4->T;
+                    double xmin, xmax, t;
+                    double Tm1, Tm2;
+                    double *xm1, *xm2, *ym1, *ym2;
+
+                    morph_t *m = morph_new(2001);
+
+                    xm1 = malloc(2001*sizeof(double));
+                    xm2 = malloc(2001*sizeof(double));
+                    ym1 = malloc(2001*sizeof(double));
+                    ym2 = malloc(2001*sizeof(double));
+
+                    morph_init(m, ds1->x, ds1->y, ds1->len,
+                        ds2->x, ds2->y, ds2->len);
+
+                    morph_get_domain(m, &xmin, &xmax);
+
+                    if (n1 == n2) {
+                        t = 0.0;
+                    } else {
+                        t = sqrt(log(lsdbu->n/n1)/log(n2/n1));
+                    }
+                    Tm1 = T1*pow(T2/T1, t*t);
+
+                    for (unsigned int i = 0; i < 2001; i++) {
+                        double x = xmin + i*(xmax - xmin)/(2001 - 1);
+
+                        double r = morph_eval(m, t, x, false);
+
+                        xm1[i] = x;
+                        ym1[i] = r;
+                    }
+
+                    morph_init(m, ds4->x, ds4->y, ds4->len,
+                        ds3->x, ds3->y, ds3->len);
+
+                    morph_get_domain(m, &xmin, &xmax);
+
+                    if (n3 == n4) {
+                        t = 0.0;
+                    } else {
+                        t = sqrt(log(lsdbu->n/n4)/log(n3/n4));
+                    }
+                    Tm2 = T4*pow(T3/T4, t*t);
+
+                    for (unsigned int i = 0; i < 2001; i++) {
+                        double x = xmin + i*(xmax - xmin)/(2001 - 1);
+
+                        double r = morph_eval(m, t, x, false);
+
+                        xm2[i] = x;
+                        ym2[i] = r;
+                    }
+
+                    morph_init(m, xm1, ym1, 2001, xm2, ym2, 2001);
+
+                    morph_get_domain(m, &xmin, &xmax);
+
+                    if (Tm1 == Tm2) {
+                        t = 0.0;
+                    } else {
+                        t = sqrt(log(lsdbu->T/Tm1)/log(Tm2/Tm1));
+                    }
+
+                    for (unsigned int i = 0; i < 2001; i++) {
+                        double x = xmin + i*(xmax - xmin)/(2001 - 1);
+
+                        double r = morph_eval(m, t, x, false);
+
+                        fprintf(lsdbu->fp_out, "%g %g\n", x, r);
+                    }
+
+                    free(xm1);
+                    free(xm2);
+                    free(ym1);
+                    free(ym2);
+
+                    morph_free(m);
+                } else {
+                    fprintf(stderr, "Failed fetching dataset(s)\n");
+                    OK = false;
+                }
+
+                lsdb_dataset_free(ds1);
+                lsdb_dataset_free(ds2);
+                lsdb_dataset_free(ds3);
+                lsdb_dataset_free(ds4);
+            } else {
+                fprintf(stderr, "Cannot extrapolate\n");
+                OK = false;
+            }
         }
     }
 
