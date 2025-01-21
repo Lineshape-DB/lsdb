@@ -13,8 +13,9 @@
 #define LSDBU_ACTION_ADD_RADIATOR   5
 #define LSDBU_ACTION_ADD_LINE       6
 #define LSDBU_ACTION_ADD_DATA       7
-#define LSDBU_ACTION_GET_DATA       8
-#define LSDBU_ACTION_INTERPOLATE    9
+#define LSDBU_ACTION_DEL_ENTITY      8
+#define LSDBU_ACTION_GET_DATA       9
+#define LSDBU_ACTION_INTERPOLATE   10
 
 typedef struct {
     FILE *fp_out;
@@ -194,6 +195,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -R <sym,A,Zsp,M>      add a radiator\n");
     fprintf(out, "  -L <name,w0>          add a line\n");
     fprintf(out, "  -D <filename>         add a dataset\n");
+    fprintf(out, "  -X                    delete an entity by its ID\n");
     fprintf(out, "  -h                    print this help\n");
 }
 
@@ -221,7 +223,7 @@ int main(int argc, char **argv)
     memset(lsdbu, 0, sizeof(lsdbu_t));
     lsdbu->fp_out = stdout;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pIM:E:R:L:D:h")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pIM:E:R:L:D:Xh")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -388,6 +390,9 @@ int main(int argc, char **argv)
                 exit(1);
             }
             break;
+        case 'X':
+            action = LSDBU_ACTION_DEL_ENTITY;
+            break;
         case 'h':
             usage(argv[0], stdout);
             exit(0);
@@ -420,6 +425,7 @@ int main(int argc, char **argv)
     case LSDBU_ACTION_ADD_RADIATOR:
     case LSDBU_ACTION_ADD_LINE:
     case LSDBU_ACTION_ADD_DATA:
+    case LSDBU_ACTION_DEL_ENTITY:
         db_access = LSDB_OPEN_RW;
         break;
     case LSDBU_ACTION_NONE:
@@ -496,6 +502,41 @@ int main(int argc, char **argv)
             OK = false;
         }
         fclose(fp_f);
+    } else
+    if (action == LSDBU_ACTION_DEL_ENTITY) {
+        if (did > 0) {
+            if (lsdb_del_dataset(lsdb, did)) {
+                fprintf(stderr, "Operation failed\n");
+                OK = false;
+            }
+        } else
+        if (lsdbu->lid > 0) {
+            if (lsdb_del_line(lsdb, lsdbu->lid)) {
+                fprintf(stderr, "Operation failed\n");
+                OK = false;
+            }
+        } else
+        if (lsdbu->rid > 0) {
+            if (lsdb_del_radiator(lsdb, lsdbu->rid)) {
+                fprintf(stderr, "Operation failed\n");
+                OK = false;
+            }
+        } else
+        if (lsdbu->eid > 0) {
+            if (lsdb_del_environment(lsdb, lsdbu->eid)) {
+                fprintf(stderr, "Operation failed\n");
+                OK = false;
+            }
+        } else
+        if (lsdbu->mid > 0) {
+            if (lsdb_del_model(lsdb, lsdbu->mid)) {
+                fprintf(stderr, "Operation failed\n");
+                OK = false;
+            }
+        } else {
+            fprintf(stderr, "No entity to delete specified\n");
+            OK = false;
+        }
     } else
     if (action == LSDBU_ACTION_INFO) {
         fprintf(lsdbu->fp_out, "Models:\n");

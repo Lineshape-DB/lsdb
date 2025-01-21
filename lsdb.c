@@ -142,6 +142,38 @@ lsdb_t *lsdb_open(const char *fname, int access)
     return lsdb;
 }
 
+static int lsdb_del_entity(lsdb_t *lsdb, const char *tname, unsigned long id)
+{
+    sqlite3_stmt *stmt;
+    char sql[64];
+    int rc;
+
+    if (!lsdb || id == 0) {
+        return LSDB_FAILURE;
+    }
+
+    sprintf(sql, "DELETE FROM %s WHERE id = ?", tname);
+
+    sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
+
+    sqlite3_bind_int(stmt, 1, id);
+
+    rc = sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+
+    if (rc == SQLITE_DONE) {
+        if (sqlite3_changes(lsdb->db) == 1) {
+            return LSDB_SUCCESS;
+        } else {
+            return LSDB_FAILURE;
+        }
+    } else {
+        fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+        return LSDB_FAILURE;
+    }
+}
+
 int lsdb_add_model(lsdb_t *lsdb, const char *name, const char *descr)
 {
     const char *sql;
@@ -218,6 +250,11 @@ int lsdb_get_models(const lsdb_t *lsdb,
     return LSDB_SUCCESS;
 }
 
+int lsdb_del_model(lsdb_t *lsdb, unsigned long id)
+{
+    return lsdb_del_entity(lsdb, "models", id);
+}
+
 int lsdb_add_environment(lsdb_t *lsdb, const char *name, const char *descr)
 {
     const char *sql;
@@ -292,6 +329,11 @@ int lsdb_get_environments(const lsdb_t *lsdb,
     sqlite3_finalize(stmt);
 
     return LSDB_SUCCESS;
+}
+
+int lsdb_del_environment(lsdb_t *lsdb, unsigned long id)
+{
+    return lsdb_del_entity(lsdb, "environments", id);
 }
 
 int lsdb_add_radiator(lsdb_t *lsdb,
@@ -375,6 +417,11 @@ int lsdb_get_radiators(const lsdb_t *lsdb,
     return LSDB_SUCCESS;
 }
 
+int lsdb_del_radiator(lsdb_t *lsdb, unsigned long id)
+{
+    return lsdb_del_entity(lsdb, "radiators", id);
+}
+
 int lsdb_add_line(lsdb_t *lsdb,
     unsigned int rid, const char *name, double energy)
 {
@@ -454,6 +501,11 @@ int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
     sqlite3_finalize(stmt);
 
     return LSDB_SUCCESS;
+}
+
+int lsdb_del_line(lsdb_t *lsdb, unsigned long id)
+{
+    return lsdb_del_entity(lsdb, "lines", id);
 }
 
 int lsdb_add_dataset(lsdb_t *lsdb,
@@ -568,6 +620,11 @@ int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
     sqlite3_finalize(stmt);
 
     return LSDB_SUCCESS;
+}
+
+int lsdb_del_dataset(lsdb_t *lsdb, unsigned long id)
+{
+    return lsdb_del_entity(lsdb, "datasets", id);
 }
 
 lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did)

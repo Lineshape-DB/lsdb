@@ -83,20 +83,24 @@ void lsdb_close(lsdb_t *lsdb);
 int lsdb_add_model(lsdb_t *lsdb, const char *name, const char *descr);
 int lsdb_get_models(const lsdb_t *lsdb,
     lsdb_model_sink_t sink, void *udata);
+int lsdb_del_model(lsdb_t *lsdb, unsigned long id);
 
 int lsdb_add_environment(lsdb_t *lsdb, const char *name, const char *descr);
 int lsdb_get_environments(const lsdb_t *lsdb,
     lsdb_environment_sink_t sink, void *udata);
+int lsdb_del_environment(lsdb_t *lsdb, unsigned long id);
 
 int lsdb_add_radiator(lsdb_t *lsdb,
     const char *symbol, int anum, double mass, int zsp);
 int lsdb_get_radiators(const lsdb_t *lsdb,
     lsdb_radiator_sink_t sink, void *udata);
+int lsdb_del_radiator(lsdb_t *lsdb, unsigned long id);
 
 int lsdb_add_line(lsdb_t *lsdb,
     unsigned int rid, const char *name, double energy);
 int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
     lsdb_line_sink_t sink, void *udata);
+int lsdb_del_line(lsdb_t *lsdb, unsigned long id);
 
 int lsdb_add_dataset(lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
@@ -104,6 +108,7 @@ int lsdb_add_dataset(lsdb_t *lsdb,
     const double *x, const double *y, size_t len);
 int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
     lsdb_dataset_sink_t sink, void *udata);
+int lsdb_del_dataset(lsdb_t *lsdb, unsigned long id);
 
 lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did);
 void lsdb_dataset_free(lsdb_dataset_t *ds);
