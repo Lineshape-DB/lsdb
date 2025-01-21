@@ -1,4 +1,4 @@
-CC = $(ARCH)gcc 
+CC = gcc
 DEBUG = -g
 LINT = -Wall -pedantic -Wextra
 OPTIMIZE = -O2
@@ -8,3 +8,5 @@ OPTIMIZE = -O2
 LIBS = -lgsl -lgslcblas -lm -lsqlite3
 
 RM = rm -f
+
+#EXE_EXT = .exe
