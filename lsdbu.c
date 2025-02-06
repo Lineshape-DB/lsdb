@@ -80,7 +80,7 @@ static int read_in(FILE *fp, double **xap, double **yap, size_t *lenp)
 }
 
 static int dataset_sink(const lsdb_t *lsdb,
-    lsdb_dataset_data_t *cbdata, void *udata)
+    const lsdb_dataset_data_t *cbdata, void *udata)
 {
     lsdbu_t *lsdbu = udata;
     (void)(lsdb);
@@ -100,7 +100,7 @@ static int dataset_sink(const lsdb_t *lsdb,
 }
 
 static int line_sink(const lsdb_t *lsdb,
-    lsdb_line_data_t *cbdata, void *udata)
+    const lsdb_line_data_t *cbdata, void *udata)
 {
     lsdbu_t *lsdbu = udata;
 
@@ -118,7 +118,7 @@ static int line_sink(const lsdb_t *lsdb,
 }
 
 static int radiator_sink(const lsdb_t *lsdb,
-    lsdb_radiator_data_t *cbdata, void *udata)
+    const lsdb_radiator_data_t *cbdata, void *udata)
 {
     lsdbu_t *lsdbu = udata;
 
@@ -136,7 +136,7 @@ static int radiator_sink(const lsdb_t *lsdb,
 }
 
 static int environment_sink(const lsdb_t *lsdb,
-    lsdb_environment_data_t *cbdata, void *udata)
+    const lsdb_environment_data_t *cbdata, void *udata)
 {
     lsdbu_t *lsdbu = udata;
     (void)(lsdb);
@@ -156,7 +156,7 @@ static int environment_sink(const lsdb_t *lsdb,
 }
 
 static int model_sink(const lsdb_t *lsdb,
-    lsdb_model_data_t *cbdata, void *udata)
+    const lsdb_model_data_t *cbdata, void *udata)
 {
     lsdbu_t *lsdbu = udata;
     (void)(lsdb);

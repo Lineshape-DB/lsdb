@@ -67,15 +67,15 @@ typedef struct {
 } lsdb_dataset_t;
 
 typedef int (*lsdb_model_sink_t)(const lsdb_t *cdb,
-    lsdb_model_data_t *cbdata, void *udata);
+    const lsdb_model_data_t *cbdata, void *udata);
 typedef int (*lsdb_environment_sink_t)(const lsdb_t *cdb,
-    lsdb_environment_data_t *cbdata, void *udata);
+    const lsdb_environment_data_t *cbdata, void *udata);
 typedef int (*lsdb_radiator_sink_t)(const lsdb_t *cdb,
-    lsdb_radiator_data_t *cbdata, void *udata);
+    const lsdb_radiator_data_t *cbdata, void *udata);
 typedef int (*lsdb_line_sink_t)(const lsdb_t *cdb,
-    lsdb_line_data_t *cbdata, void *udata);
+    const lsdb_line_data_t *cbdata, void *udata);
 typedef int (*lsdb_dataset_sink_t)(const lsdb_t *cdb,
-    lsdb_dataset_data_t *cbdata, void *udata);
+    const lsdb_dataset_data_t *cbdata, void *udata);
 
 lsdb_t *lsdb_open(const char *fname, int access);
 void lsdb_close(lsdb_t *lsdb);
