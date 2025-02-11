@@ -28,13 +28,13 @@ typedef struct {
     unsigned long id;
     const char *name;
     const char *descr;
-} lsdb_model_data_t;
+} lsdb_model_t;
 
 typedef struct {
     unsigned long id;
     const char *name;
     const char *descr;
-} lsdb_environment_data_t;
+} lsdb_environment_t;
 
 typedef struct {
     unsigned long id;
@@ -42,13 +42,13 @@ typedef struct {
     unsigned int anum;
     double mass;
     unsigned int zsp;
-} lsdb_radiator_data_t;
+} lsdb_radiator_t;
 
 typedef struct {
     unsigned long id;
     const char *name;
     double energy;
-} lsdb_line_data_t;
+} lsdb_line_t;
 
 typedef struct {
     unsigned long id;
@@ -56,7 +56,7 @@ typedef struct {
     unsigned long eid;
     double n;
     double T;
-} lsdb_dataset_data_t;
+} lsdb_dataset_t;
 
 typedef struct {
     double n;
@@ -64,18 +64,18 @@ typedef struct {
     size_t len;
     double *x;
     double *y;
-} lsdb_dataset_t;
+} lsdb_dataset_data_t;
 
-typedef int (*lsdb_model_sink_t)(const lsdb_t *cdb,
-    const lsdb_model_data_t *cbdata, void *udata);
-typedef int (*lsdb_environment_sink_t)(const lsdb_t *cdb,
-    const lsdb_environment_data_t *cbdata, void *udata);
-typedef int (*lsdb_radiator_sink_t)(const lsdb_t *cdb,
-    const lsdb_radiator_data_t *cbdata, void *udata);
-typedef int (*lsdb_line_sink_t)(const lsdb_t *cdb,
-    const lsdb_line_data_t *cbdata, void *udata);
-typedef int (*lsdb_dataset_sink_t)(const lsdb_t *cdb,
-    const lsdb_dataset_data_t *cbdata, void *udata);
+typedef int (*lsdb_model_sink_t)(const lsdb_t *lsdb,
+    const lsdb_model_t *m, void *udata);
+typedef int (*lsdb_environment_sink_t)(const lsdb_t *lsdb,
+    const lsdb_environment_t *e, void *udata);
+typedef int (*lsdb_radiator_sink_t)(const lsdb_t *lsdb,
+    const lsdb_radiator_t *r, void *udata);
+typedef int (*lsdb_line_sink_t)(const lsdb_t *lsdb,
+    const lsdb_line_t *l, void *udata);
+typedef int (*lsdb_dataset_sink_t)(const lsdb_t *lsdb,
+    const lsdb_dataset_t *cbdata, void *udata);
 
 lsdb_t *lsdb_open(const char *fname, int access);
 void lsdb_close(lsdb_t *lsdb);
@@ -110,10 +110,10 @@ int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
     lsdb_dataset_sink_t sink, void *udata);
 int lsdb_del_dataset(lsdb_t *lsdb, unsigned long id);
 
-lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did);
-void lsdb_dataset_free(lsdb_dataset_t *ds);
+lsdb_dataset_data_t *lsdb_get_dataset_data(lsdb_t *lsdb, int did);
+void lsdb_dataset_data_free(lsdb_dataset_data_t *ds);
 
-lsdb_dataset_t *lsdb_dataset_new(double n, double T, size_t len);
+lsdb_dataset_data_t *lsdb_dataset_data_new(double n, double T, size_t len);
 
 int lsdb_get_closest_dids(const lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,

@@ -80,7 +80,7 @@ static int read_in(FILE *fp, double **xap, double **yap, size_t *lenp)
 }
 
 static int dataset_sink(const lsdb_t *lsdb,
-    const lsdb_dataset_data_t *cbdata, void *udata)
+    const lsdb_dataset_t *cbdata, void *udata)
 {
     lsdbu_t *lsdbu = udata;
     (void)(lsdb);
@@ -100,54 +100,54 @@ static int dataset_sink(const lsdb_t *lsdb,
 }
 
 static int line_sink(const lsdb_t *lsdb,
-    const lsdb_line_data_t *cbdata, void *udata)
+    const lsdb_line_t *l, void *udata)
 {
     lsdbu_t *lsdbu = udata;
 
-    if (lsdbu->lid != 0 && cbdata->id != lsdbu->lid) {
+    if (lsdbu->lid != 0 && l->id != lsdbu->lid) {
         return LSDB_SUCCESS;
     }
 
     fprintf(lsdbu->fp_out, "    id = %lu: \"%s\" (%g cm^-1 => %g eV)\n",
-        cbdata->id, cbdata->name, cbdata->energy, cbdata->energy/8065.5);
+        l->id, l->name, l->energy, l->energy/8065.5);
 
     fprintf(lsdbu->fp_out, "    Datasets:\n");
-    lsdb_get_datasets(lsdb, cbdata->id, dataset_sink, lsdbu);
+    lsdb_get_datasets(lsdb, l->id, dataset_sink, lsdbu);
 
     return LSDB_SUCCESS;
 }
 
 static int radiator_sink(const lsdb_t *lsdb,
-    const lsdb_radiator_data_t *cbdata, void *udata)
+    const lsdb_radiator_t *r, void *udata)
 {
     lsdbu_t *lsdbu = udata;
 
-    if (lsdbu->rid != 0 && cbdata->id != lsdbu->rid) {
+    if (lsdbu->rid != 0 && r->id != lsdbu->rid) {
         return LSDB_SUCCESS;
     }
 
     fprintf(lsdbu->fp_out, "  id = %lu: \"%s\" (A = %d, Zsp = %d, mass = %g)\n",
-        cbdata->id, cbdata->sym, cbdata->anum, cbdata->zsp, cbdata->mass);
+        r->id, r->sym, r->anum, r->zsp, r->mass);
 
     fprintf(lsdbu->fp_out, "  Lines:\n");
-    lsdb_get_lines(lsdb, cbdata->id, line_sink, lsdbu);
+    lsdb_get_lines(lsdb, r->id, line_sink, lsdbu);
 
     return LSDB_SUCCESS;
 }
 
 static int environment_sink(const lsdb_t *lsdb,
-    const lsdb_environment_data_t *cbdata, void *udata)
+    const lsdb_environment_t *e, void *udata)
 {
     lsdbu_t *lsdbu = udata;
     (void)(lsdb);
 
-    if (lsdbu->eid != 0 && cbdata->id != lsdbu->eid) {
+    if (lsdbu->eid != 0 && e->id != lsdbu->eid) {
         return LSDB_SUCCESS;
     }
 
-    fprintf(lsdbu->fp_out, "  id = %lu: \"%s\"", cbdata->id, cbdata->name);
-    if (cbdata->descr && strlen(cbdata->descr) > 0) {
-        fprintf(lsdbu->fp_out, " (%s)\n", cbdata->descr);
+    fprintf(lsdbu->fp_out, "  id = %lu: \"%s\"", e->id, e->name);
+    if (e->descr && strlen(e->descr) > 0) {
+        fprintf(lsdbu->fp_out, " (%s)\n", e->descr);
     } else {
         fprintf(lsdbu->fp_out, "\n");
     }
@@ -156,18 +156,18 @@ static int environment_sink(const lsdb_t *lsdb,
 }
 
 static int model_sink(const lsdb_t *lsdb,
-    const lsdb_model_data_t *cbdata, void *udata)
+    const lsdb_model_t *m, void *udata)
 {
     lsdbu_t *lsdbu = udata;
     (void)(lsdb);
 
-    if (lsdbu->mid != 0 && cbdata->id != lsdbu->mid) {
+    if (lsdbu->mid != 0 && m->id != lsdbu->mid) {
         return LSDB_SUCCESS;
     }
 
-    fprintf(lsdbu->fp_out, "  id = %lu: \"%s\"", cbdata->id, cbdata->name);
-    if (cbdata->descr && strlen(cbdata->descr) > 0) {
-        fprintf(lsdbu->fp_out, " (%s)\n", cbdata->descr);
+    fprintf(lsdbu->fp_out, "  id = %lu: \"%s\"", m->id, m->name);
+    if (m->descr && strlen(m->descr) > 0) {
+        fprintf(lsdbu->fp_out, " (%s)\n", m->descr);
     } else {
         fprintf(lsdbu->fp_out, "\n");
     }
@@ -547,13 +547,13 @@ int main(int argc, char **argv)
         lsdb_get_radiators(lsdb, radiator_sink, lsdbu);
     } else
     if (action == LSDBU_ACTION_GET_DATA) {
-        lsdb_dataset_t *ds = lsdb_get_dataset(lsdb, did);
+        lsdb_dataset_data_t *ds = lsdb_get_dataset_data(lsdb, did);
         if (ds) {
             for (unsigned int i = 0; i < ds->len; i++) {
                 fprintf(lsdbu->fp_out, "%g %g\n", ds->x[i], ds->y[i]);
             }
 
-            lsdb_dataset_free(ds);
+            lsdb_dataset_data_free(ds);
         } else {
             fprintf(stderr, "Failed fetching dataset %ld\n", did);
             OK = false;
@@ -577,15 +577,15 @@ int main(int argc, char **argv)
             rc = lsdb_get_closest_dids(lsdb, lsdbu->mid, lsdbu->eid, lsdbu->lid,
                 lsdbu->n, lsdbu->T, &did1, &did2, &did3, &did4);
             if (rc == LSDB_SUCCESS) {
-                lsdb_dataset_t *ds1, *ds2, *ds3, *ds4;
+                lsdb_dataset_data_t *ds1, *ds2, *ds3, *ds4;
 
                 fprintf(stderr, "Interpolating over datasets %lu,%lu,%lu,%lu\n",
                     did1, did2, did3, did4);
 
-                ds1 = lsdb_get_dataset(lsdb, did1);
-                ds2 = lsdb_get_dataset(lsdb, did2);
-                ds3 = lsdb_get_dataset(lsdb, did3);
-                ds4 = lsdb_get_dataset(lsdb, did4);
+                ds1 = lsdb_get_dataset_data(lsdb, did1);
+                ds2 = lsdb_get_dataset_data(lsdb, did2);
+                ds3 = lsdb_get_dataset_data(lsdb, did3);
+                ds4 = lsdb_get_dataset_data(lsdb, did4);
 
                 if (ds1 && ds2 && ds3 && ds4) {
                     double n1 = ds1->n, n2 = ds2->n, n3 = ds3->n, n4 = ds4->n;
@@ -672,10 +672,10 @@ int main(int argc, char **argv)
                     OK = false;
                 }
 
-                lsdb_dataset_free(ds1);
-                lsdb_dataset_free(ds2);
-                lsdb_dataset_free(ds3);
-                lsdb_dataset_free(ds4);
+                lsdb_dataset_data_free(ds1);
+                lsdb_dataset_data_free(ds2);
+                lsdb_dataset_data_free(ds3);
+                lsdb_dataset_data_free(ds4);
             } else {
                 fprintf(stderr, "Cannot extrapolate\n");
                 OK = false;

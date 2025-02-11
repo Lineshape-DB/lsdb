@@ -6,7 +6,7 @@
 #define SQLITE3_BIND_STR(stmt, id, txt) \
         sqlite3_bind_text(stmt, id, txt, -1, SQLITE_STATIC)
 
-void lsdb_dataset_free(lsdb_dataset_t *ds)
+void lsdb_dataset_data_free(lsdb_dataset_data_t *ds)
 {
     if (ds) {
         if (ds->x) {
@@ -20,11 +20,11 @@ void lsdb_dataset_free(lsdb_dataset_t *ds)
     }
 }
 
-lsdb_dataset_t *lsdb_dataset_new(double n, double T, size_t len)
+lsdb_dataset_data_t *lsdb_dataset_data_new(double n, double T, size_t len)
 {
-    lsdb_dataset_t *ds;
+    lsdb_dataset_data_t *ds;
 
-    ds = malloc(sizeof(lsdb_dataset_t));
+    ds = malloc(sizeof(lsdb_dataset_data_t));
     if (ds) {
         ds->n = n;
         ds->T = T;
@@ -32,7 +32,7 @@ lsdb_dataset_t *lsdb_dataset_new(double n, double T, size_t len)
         ds->x = calloc(len, sizeof(double));
         ds->y = calloc(len, sizeof(double));
         if (!ds->x || !ds->y) {
-            lsdb_dataset_free(ds);
+            lsdb_dataset_data_free(ds);
             return NULL;
         }
 
@@ -219,7 +219,7 @@ int lsdb_get_models(const lsdb_t *lsdb,
     sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
 
     do {
-        lsdb_model_data_t cbdata;
+        lsdb_model_t m;
 
         rc = sqlite3_step(stmt);
         switch (rc) {
@@ -227,11 +227,11 @@ int lsdb_get_models(const lsdb_t *lsdb,
         case SQLITE_OK:
             break;
         case SQLITE_ROW:
-            cbdata.id    = sqlite3_column_int   (stmt, 0);
-            cbdata.name  = (char *) sqlite3_column_text(stmt, 1);
-            cbdata.descr = (char *) sqlite3_column_text(stmt, 2);
+            m.id    = sqlite3_column_int   (stmt, 0);
+            m.name  = (char *) sqlite3_column_text(stmt, 1);
+            m.descr = (char *) sqlite3_column_text(stmt, 2);
 
-            if (sink(lsdb, &cbdata, udata) != LSDB_SUCCESS) {
+            if (sink(lsdb, &m, udata) != LSDB_SUCCESS) {
                 sqlite3_finalize(stmt);
                 return LSDB_FAILURE;
             }
@@ -300,7 +300,7 @@ int lsdb_get_environments(const lsdb_t *lsdb,
     sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
 
     do {
-        lsdb_environment_data_t cbdata;
+        lsdb_environment_t e;
 
         rc = sqlite3_step(stmt);
         switch (rc) {
@@ -308,11 +308,11 @@ int lsdb_get_environments(const lsdb_t *lsdb,
         case SQLITE_OK:
             break;
         case SQLITE_ROW:
-            cbdata.id    = sqlite3_column_int   (stmt, 0);
-            cbdata.name  = (char *) sqlite3_column_text(stmt, 1);
-            cbdata.descr = (char *) sqlite3_column_text(stmt, 2);
+            e.id    = sqlite3_column_int   (stmt, 0);
+            e.name  = (char *) sqlite3_column_text(stmt, 1);
+            e.descr = (char *) sqlite3_column_text(stmt, 2);
 
-            if (sink(lsdb, &cbdata, udata) != LSDB_SUCCESS) {
+            if (sink(lsdb, &e, udata) != LSDB_SUCCESS) {
                 sqlite3_finalize(stmt);
                 return LSDB_FAILURE;
             }
@@ -384,7 +384,7 @@ int lsdb_get_radiators(const lsdb_t *lsdb,
     sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
 
     do {
-        lsdb_radiator_data_t cbdata;
+        lsdb_radiator_t r;
 
         rc = sqlite3_step(stmt);
         switch (rc) {
@@ -392,13 +392,13 @@ int lsdb_get_radiators(const lsdb_t *lsdb,
         case SQLITE_OK:
             break;
         case SQLITE_ROW:
-            cbdata.id   = sqlite3_column_int   (stmt, 0);
-            cbdata.sym  = (char *) sqlite3_column_text(stmt, 1);
-            cbdata.anum = sqlite3_column_int   (stmt, 2);
-            cbdata.mass = sqlite3_column_double(stmt, 3);
-            cbdata.zsp  = sqlite3_column_int   (stmt, 4);
+            r.id   = sqlite3_column_int   (stmt, 0);
+            r.sym  = (char *) sqlite3_column_text(stmt, 1);
+            r.anum = sqlite3_column_int   (stmt, 2);
+            r.mass = sqlite3_column_double(stmt, 3);
+            r.zsp  = sqlite3_column_int   (stmt, 4);
 
-            if (sink(lsdb, &cbdata, udata) != LSDB_SUCCESS) {
+            if (sink(lsdb, &r, udata) != LSDB_SUCCESS) {
                 sqlite3_finalize(stmt);
                 return LSDB_FAILURE;
             }
@@ -472,7 +472,7 @@ int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
     sqlite3_bind_int(stmt, 1, rid);
 
     do {
-        lsdb_line_data_t cbdata;
+        lsdb_line_t l;
 
         rc = sqlite3_step(stmt);
         switch (rc) {
@@ -480,11 +480,11 @@ int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
         case SQLITE_OK:
             break;
         case SQLITE_ROW:
-            cbdata.id     = sqlite3_column_int(stmt, 0);
-            cbdata.name   = (char *) sqlite3_column_text(stmt, 1);
-            cbdata.energy = sqlite3_column_double(stmt, 2);
+            l.id     = sqlite3_column_int(stmt, 0);
+            l.name   = (char *) sqlite3_column_text(stmt, 1);
+            l.energy = sqlite3_column_double(stmt, 2);
 
-            if (sink(lsdb, &cbdata, udata) != LSDB_SUCCESS) {
+            if (sink(lsdb, &l, udata) != LSDB_SUCCESS) {
                 sqlite3_finalize(stmt);
                 return LSDB_FAILURE;
             }
@@ -589,7 +589,7 @@ int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
     sqlite3_bind_int(stmt, 1, lid);
 
     do {
-        lsdb_dataset_data_t cbdata;
+        lsdb_dataset_t cbdata;
 
         rc = sqlite3_step(stmt);
         switch (rc) {
@@ -627,9 +627,9 @@ int lsdb_del_dataset(lsdb_t *lsdb, unsigned long id)
     return lsdb_del_entity(lsdb, "datasets", id);
 }
 
-lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did)
+lsdb_dataset_data_t *lsdb_get_dataset_data(lsdb_t *lsdb, int did)
 {
-    lsdb_dataset_t *ds;
+    lsdb_dataset_data_t *ds;
     const char *sql;
     sqlite3_stmt *stmt;
     int rc;
@@ -656,7 +656,7 @@ lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did)
             lsdb_errmsg(lsdb, "Dataset %d not found\n", did);
             return NULL;
         }
-        ds = lsdb_dataset_new(n, T, len);
+        ds = lsdb_dataset_data_new(n, T, len);
         if (!ds) {
             lsdb_errmsg(lsdb, "Dataset allocation failed\n");
             return NULL;
@@ -687,7 +687,7 @@ lsdb_dataset_t *lsdb_get_dataset(lsdb_t *lsdb, int did)
         default:
             lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
-            lsdb_dataset_free(ds);
+            lsdb_dataset_data_free(ds);
             return NULL;
         }
     } while (rc == SQLITE_ROW && i < ds->len);
