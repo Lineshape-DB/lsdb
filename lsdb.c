@@ -51,7 +51,7 @@ void lsdb_close(lsdb_t *lsdb)
     }
 }
 
-static void lsdb_errmsg(const lsdb_t *lsdb, const char *fmt, ...)
+void lsdb_errmsg(const lsdb_t *lsdb, const char *fmt, ...)
 {
     va_list args;
 

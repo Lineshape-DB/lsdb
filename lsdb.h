@@ -66,6 +66,8 @@ typedef struct {
     double *y;
 } lsdb_dataset_data_t;
 
+void lsdb_errmsg(const lsdb_t *lsdb, const char *fmt, ...);
+
 typedef int (*lsdb_model_sink_t)(const lsdb_t *lsdb,
     const lsdb_model_t *m, void *udata);
 typedef int (*lsdb_environment_sink_t)(const lsdb_t *lsdb,
@@ -120,5 +122,9 @@ int lsdb_get_closest_dids(const lsdb_t *lsdb,
     double n, double T,
     unsigned long *did1, unsigned long *did2,
     unsigned long *did3, unsigned long *did4);
+
+lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double n, double T, unsigned int len);
 
 #endif /* LSDB_H */
