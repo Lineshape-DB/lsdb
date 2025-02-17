@@ -627,7 +627,7 @@ int lsdb_del_dataset(lsdb_t *lsdb, unsigned long id)
     return lsdb_del_entity(lsdb, "datasets", id);
 }
 
-lsdb_dataset_data_t *lsdb_get_dataset_data(lsdb_t *lsdb, int did)
+lsdb_dataset_data_t *lsdb_get_dataset_data(const lsdb_t *lsdb, int did)
 {
     lsdb_dataset_data_t *ds;
     const char *sql;

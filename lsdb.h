@@ -110,7 +110,7 @@ int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
     lsdb_dataset_sink_t sink, void *udata);
 int lsdb_del_dataset(lsdb_t *lsdb, unsigned long id);
 
-lsdb_dataset_data_t *lsdb_get_dataset_data(lsdb_t *lsdb, int did);
+lsdb_dataset_data_t *lsdb_get_dataset_data(const lsdb_t *lsdb, int did);
 void lsdb_dataset_data_free(lsdb_dataset_data_t *ds);
 
 lsdb_dataset_data_t *lsdb_dataset_data_new(double n, double T, size_t len);
