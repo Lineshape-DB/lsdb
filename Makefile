@@ -1,6 +1,10 @@
 include Make.conf
 
-PROGS  = morphu$(EXE_EXT) lsdbu$(EXE_EXT)
+.SUFFIXES : .c .vala
+%.vala.o: %.vala
+	$(VALAC) $(VFLAGS) -c $<
+
+PROGS  = morphu$(EXE_EXT) lsdbu$(EXE_EXT) fit$(EXE_EXT)
 
 MCSRCS = morph.c morphu.c
 LCSRCS = lsdb.c interp.c lsdbu.c morph.c
@@ -24,6 +28,9 @@ morphu$(EXE_EXT): $(MCOBJS)
 lsdbu$(EXE_EXT): $(LCOBJS)
 	$(CC) $(LDFLAGS) -o $@ $(LCOBJS) $(LIBS)
 
+fit$(EXE_EXT): lsdb.o grace.vala.o fit.vala.o
+	$(CC) $(LDFLAGS) -o $@ lsdb.o morph.o interp.o fit.vala.o grace.vala.o $(GTKLIBS) $(LIBS)
+
 include Make.dep
 
 Make.dep: $(SRCS)
@@ -34,6 +41,16 @@ Make.dep: $(SRCS)
 
 schema.i : schema.sql
 	./sql2cstr.sh < $? > $@
+
+grace.vapi : grace.vala
+	$(VALAC) --pkg gee-0.8 --pkg gtk4 -X -Wno-incompatible-pointer-types \
+	   --library grace -H grace.h -c $<
+
+grace.vala.o : grace.vala
+	$(VALAC) --pkg gee-0.8 --pkg gtk4 -X -Wno-incompatible-pointer-types \
+	   -c $<
+
+fit.vala.o : lsdb.vapi grace.vapi
 
 clean:
 	$(RM) $(PROGS) $(COBJS) \
