@@ -13,7 +13,7 @@
 #define LSDBU_ACTION_ADD_RADIATOR   5
 #define LSDBU_ACTION_ADD_LINE       6
 #define LSDBU_ACTION_ADD_DATA       7
-#define LSDBU_ACTION_DEL_ENTITY      8
+#define LSDBU_ACTION_DEL_ENTITY     8
 #define LSDBU_ACTION_GET_DATA       9
 #define LSDBU_ACTION_INTERPOLATE   10
 
@@ -189,6 +189,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -n <n>                set electron density to n/cc [0]\n");
     fprintf(out, "  -T <T>                set temperature to T eV [0]\n");
     fprintf(out, "  -p                    print interpolated lineshape\n");
+    fprintf(out, "  -c                    convolve with the Doppler broadening\n");
     fprintf(out, "  -I                    initialize the DB\n");
     fprintf(out, "  -M <name[,descr]>     add a model\n");
     fprintf(out, "  -E <name[,descr]>     add an environment\n");
@@ -217,13 +218,14 @@ int main(int argc, char **argv)
     int anum = 0, zsp = 0;
     double mass = 0, w0 = 0, *x = NULL, *y = NULL;
     size_t len;
+    bool doppler = false;
 
     int opt;
 
     memset(lsdbu, 0, sizeof(lsdbu_t));
     lsdbu->fp_out = stdout;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pIM:E:R:L:D:Xh")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIM:E:R:L:D:Xh")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -292,6 +294,9 @@ int main(int argc, char **argv)
             break;
         case 'p':
             action = LSDBU_ACTION_INTERPOLATE;
+            break;
+        case 'c':
+            doppler = true;
             break;
         case 'I':
             action = LSDBU_ACTION_INIT;
@@ -574,7 +579,7 @@ int main(int argc, char **argv)
         } else {
             lsdb_dataset_data_t *dsi = lsdb_get_interpolation(lsdb,
                 lsdbu->mid, lsdbu->eid, lsdbu->lid,
-                lsdbu->n, lsdbu->T, 2001);
+                lsdbu->n, lsdbu->T, 2001, doppler);
 
             if (dsi) {
                 for (unsigned int i = 0; i < 2001; i++) {

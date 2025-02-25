@@ -125,6 +125,6 @@ int lsdb_get_closest_dids(const lsdb_t *lsdb,
 
 lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
-    double n, double T, unsigned int len);
+    double n, double T, unsigned int len, bool doppler);
 
 #endif /* LSDB_H */
