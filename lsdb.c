@@ -713,6 +713,12 @@ int lsdb_get_closest_dids(const lsdb_t *lsdb,
     bool found = false;
     int rc;
 
+    *did1 = *did2 = *did3 = *did4 = 0;
+
+    if (n <= 0 || T <= 0) {
+        return LSDB_FAILURE;
+    }
+
     sql = "SELECT id, (n - ?)/? AS dn, (T - ?)/? AS dT" \
           " FROM datasets WHERE mid = ? AND eid = ? AND lid = ?" \
           " ORDER BY dn*dn + dT*dT";
@@ -726,8 +732,6 @@ int lsdb_get_closest_dids(const lsdb_t *lsdb,
     sqlite3_bind_int(stmt, 5, mid);
     sqlite3_bind_int(stmt, 6, eid);
     sqlite3_bind_int(stmt, 7, lid);
-
-    *did1 = *did2 = *did3 = *did4 = 0;
 
     do {
         unsigned int id;
