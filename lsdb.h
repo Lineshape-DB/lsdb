@@ -1,26 +1,12 @@
 #ifndef LSDB_H
 #define LSDB_H
 
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <sqlite3.h>
-
 #define LSDB_SUCCESS    0
 #define LSDB_FAILURE    1
 
 #define LSDB_OPEN_RO    0
 #define LSDB_OPEN_RW    1
 #define LSDB_OPEN_INIT  2
-
-struct _lsdb_t {
-    sqlite3 *db;
-    int      db_format;
-
-    FILE    *err_fp;
-
-    void    *udata;
-};
 
 typedef struct _lsdb_t lsdb_t;
 

@@ -1,5 +1,8 @@
 #include <stdbool.h>
-#include <lsdb.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <lsdbP.h>
 
 #include "schema.i"
 

@@ -1,7 +1,8 @@
-#include <lsdb.h>
+#include <lsdbP.h>
 #include <morph.h>
 #include <fftw3.h>
 #include <math.h>
+#include <stdlib.h>
 
 double lsdb_get_doppler_sigma(const lsdb_t *lsdb, unsigned long lid, double T)
 {
