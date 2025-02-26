@@ -1,4 +1,4 @@
-[CCode (cheader_filename = "lsdb.h", lower_case_cprefix = "lsdb_")]
+[CCode (cheader_filename = "lsdb/lsdb.h", lower_case_cprefix = "lsdb_")]
 
 namespace LSDB {
     public const int SUCCESS;
