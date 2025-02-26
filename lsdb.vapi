@@ -104,6 +104,9 @@ namespace LSDB {
 
         [CCode (cname = "lsdb_get_interpolation")]
         public DatasetData? get_interpolation(ulong mid, ulong eid, ulong lid,
-            double n, double T, ulong len, bool doppler);
+            double n, double T, ulong len, double sigma, double gamma);
+
+        [CCode (cname = "lsdb_get_doppler_sigma")]
+        public double get_doppler_sigma(ulong lid, double T);
     }
 }
