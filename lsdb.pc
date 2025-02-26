@@ -1,0 +1,10 @@
+prefix=/usr/local
+libdir=${prefix}/lib
+includedir=${prefix}/include
+
+Name: LSDB
+Description: LSDB library
+Version: 1.0.0
+
+Libs: -L${libdir} -llsdb -lgsl -lgslcblas -lfftw3 -lm -lsqlite3
+Cflags: -I${includedir}

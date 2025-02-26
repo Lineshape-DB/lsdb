@@ -1,4 +1,5 @@
 *.o
+*.a
 Make.conf
 Make.dep
 morphu

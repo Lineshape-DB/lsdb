@@ -2,29 +2,39 @@ include Make.conf
 
 .SUFFIXES : .c
 
+LSDBLIB = liblsdb.a
+
+LIBSRCS = morph.c lsdb.c interp.c
+
 PROGS  = morphu$(EXE_EXT) lsdbu$(EXE_EXT)
 
-MCSRCS = morph.c morphu.c
-LCSRCS = lsdb.c interp.c lsdbu.c morph.c
+MCSRCS = morphu.c
+LCSRCS = lsdbu.c
 
-CHDRS  = morph.h morphP.h lsdb.h
+CHDRS  = include/lsdb/morph.h include/lsdb/morphP.h \
+	 include/lsdb/lsdb.h include/lsdb/lsdbP.h
+
+LIBOBJS = ${LIBSRCS:.c=.o}
 
 MCOBJS = ${MCSRCS:.c=.o}
 LCOBJS = ${LCSRCS:.c=.o}
 
-SRCS   = $(MCSRCS) $(LCSRCS)
-COBJS  = $(MCOBJS) $(LCOBJS)
+SRCS   = $(LIBSRCS) $(MCSRCS) $(LCSRCS)
+COBJS  = $(LIBOBJS) $(MCOBJS) $(LCOBJS)
 
 CFLAGS = $(DEBUG) $(LINT) $(OPTIMIZE) $(TCOVERAGE) $(PROFILING) -I ./include
 LDFLAGS = $(DEBUG) 
 
 all: $(PROGS)
 
-morphu$(EXE_EXT): $(MCOBJS)
-	$(CC) $(LDFLAGS) -o $@ $(MCOBJS) $(LIBS)
+$(LSDBLIB) : $(LIBOBJS)
+	ar cr $@ $^
 
-lsdbu$(EXE_EXT): $(LCOBJS)
-	$(CC) $(LDFLAGS) -o $@ $(LCOBJS) $(LIBS)
+morphu$(EXE_EXT): $(MCOBJS) $(LSDBLIB)
+	$(CC) $(LDFLAGS) -o $@ $(MCOBJS) -L . -llsdb $(LIBS)
+
+lsdbu$(EXE_EXT): $(LCOBJS) $(LSDBLIB)
+	$(CC) $(LDFLAGS) -o $@ $(LCOBJS) -L . -llsdb $(LIBS)
 
 include Make.dep
 
