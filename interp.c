@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <lsdb.h>
 #include <morph.h>
 #include <fftw3.h>
