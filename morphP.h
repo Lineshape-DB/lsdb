@@ -1,6 +1,9 @@
 #ifndef MORPHP_H
 #define MORPHP_H
 
+#include <stddef.h>
+#include <gsl/gsl_spline.h>
+
 #include <morph.h>
 
 struct _morph_t {
