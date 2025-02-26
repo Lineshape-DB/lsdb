@@ -10,3 +10,17 @@ LIBS = -lgsl -lgslcblas -lfftw3 -lm -lsqlite3
 RM = rm -f
 
 #EXE_EXT = .exe
+
+INSTALL = /usr/bin/install -c
+INSTALLDIR = /usr/bin/install -c -d
+INSTALLDATA = /usr/bin/install -c -m 644
+
+prefix = /usr/local
+exec_prefix = ${prefix}
+datarootdir = ${prefix}/share
+
+BINDIR  = ${exec_prefix}/bin
+LIBDIR  = ${exec_prefix}/lib
+INCDIR  = ${prefix}/include
+PKGDIR  = ${datarootdir}/pkgconfig
+VAPIDIR = ${datarootdir}/vala/vapi

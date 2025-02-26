@@ -47,6 +47,19 @@ Make.dep: $(SRCS)
 schema.i : schema.sql
 	./sql2cstr.sh < $? > $@
 
+
+install: $(PROGS) include/lsdb/lsdb.h include/lsdb/morph.h $(LSDBLIB)
+	$(INSTALLDIR) $(BINDIR)
+	$(INSTALL) $(PROGS) $(BINDIR)
+	$(INSTALLDIR) $(INCDIR)/lsdb
+	$(INSTALLDATA) include/lsdb/lsdb.h include/lsdb/morph.h $(INCDIR)/lsdb
+	$(INSTALLDIR) $(LIBDIR)
+	$(INSTALLDATA) $(LSDBLIB) $(LIBDIR)
+	$(INSTALLDIR) $(PKGDIR)
+	$(INSTALLDATA) lsdb.pc $(PKGDIR)
+	$(INSTALLDIR) $(VAPIDIR)
+	$(INSTALLDATA) lsdb.vapi $(VAPIDIR)
+
 clean:
 	$(RM) $(PROGS) $(COBJS) \
 	Make.dep tags ChangeLog *.bak \
