@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <lsdb.h>
 
 #include "schema.i"

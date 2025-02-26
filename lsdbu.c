@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <getopt.h>
 #include <math.h>
 
@@ -576,9 +577,13 @@ int main(int argc, char **argv)
             fprintf(stderr, "Density and temperature must be defined\n");
             OK = false;
         } else {
+            double sigma = 0.0;
+            if (doppler) {
+                sigma = lsdb_get_doppler_sigma(lsdb, lsdbu->lid, lsdbu->T);
+            }
             lsdb_dataset_data_t *dsi = lsdb_get_interpolation(lsdb,
                 lsdbu->mid, lsdbu->eid, lsdbu->lid,
-                lsdbu->n, lsdbu->T, 2001, doppler);
+                lsdbu->n, lsdbu->T, 2001, sigma, 0);
 
             if (dsi) {
                 for (unsigned int i = 0; i < 2001; i++) {

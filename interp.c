@@ -3,19 +3,16 @@
 #include <fftw3.h>
 #include <math.h>
 
-
-static int lsdb_get_line_props(const lsdb_t *lsdb, unsigned long lid,
-    double *energy, double *mass)
+double lsdb_get_doppler_sigma(const lsdb_t *lsdb, unsigned long lid, double T)
 {
     sqlite3_stmt *stmt;
     const char *sql;
     int rc;
 
-    *energy = 0;
-    *mass = 0;
+    double sigma = 0.0;
 
     if (!lsdb) {
-        return LSDB_FAILURE;
+        return 0.0;
     }
 
     sql = "SELECT l.energy, r.mass " \
@@ -28,20 +25,21 @@ static int lsdb_get_line_props(const lsdb_t *lsdb, unsigned long lid,
 
     rc = sqlite3_step(stmt);
     if (rc == SQLITE_ROW) {
-        *energy = sqlite3_column_double(stmt, 0);
-        *mass   = sqlite3_column_double(stmt, 1);
+        double energy = sqlite3_column_double(stmt, 0);
+        double mass   = sqlite3_column_double(stmt, 1);
 
-        sqlite3_finalize(stmt);
-        return LSDB_SUCCESS;
+        sigma = 3.265e-5*energy*sqrt(T/mass);
     } else {
         lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
-        sqlite3_finalize(stmt);
-        return LSDB_FAILURE;
     }
+
+    sqlite3_finalize(stmt);
+
+    return sigma;
 }
 
 /* convolution with a Voigt function; original data are replaced! */
-static int voigt_conv(double *y, size_t n, double dx, double gamma, double sigma)
+static int voigt_conv(double *y, size_t n, double dx, double sigma, double gamma)
 {
     size_t i;
     fftw_plan xplan, zplan;
@@ -73,7 +71,7 @@ static int voigt_conv(double *y, size_t n, double dx, double gamma, double sigma
 
 lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
-    double n, double T, unsigned int len, bool doppler)
+    double n, double T, unsigned int len, double sigma, double gamma)
 {
     long unsigned did1, did2, did3, did4;
     int rc;
@@ -173,18 +171,10 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
 
             morph_free(m);
 
-            if (doppler) {
-                double w0, M;
-                if (lsdb_get_line_props(lsdb, lid, &w0, &M) == LSDB_SUCCESS) {
-                    double gamma = 0.0;
-                    double sigma = 3.265e-5*w0*sqrt(T/M);
-                    if (voigt_conv(dsi->y, len, dx, gamma, sigma)
-                        != LSDB_SUCCESS) {
-                        lsdb_errmsg(lsdb, "Doppler convolution failed\n");
-                        OK = false;
-                    }
-                } else {
-                    lsdb_errmsg(lsdb, "Doppler convolution failed\n");
+            if (OK && (sigma > 0.0 || gamma > 0.0)) {
+                if (voigt_conv(dsi->y, len, dx, sigma, gamma)
+                    != LSDB_SUCCESS) {
+                    lsdb_errmsg(lsdb, "Convolution failed\n");
                     OK = false;
                 }
             }
