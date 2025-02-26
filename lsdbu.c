@@ -6,8 +6,7 @@
 
 #include <math.h>
 
-#include <lsdb.h>
-#include <morph.h>
+#include <lsdb/lsdb.h>
 
 #define LSDBU_ACTION_NONE           0
 #define LSDBU_ACTION_INFO           1

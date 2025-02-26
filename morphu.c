@@ -4,7 +4,7 @@
 #include <math.h>
 #include <getopt.h>
 
-#include <morph.h>
+#include <lsdb/morph.h>
 
 #define NPOINTS 2001
 

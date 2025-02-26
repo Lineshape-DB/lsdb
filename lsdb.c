@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <lsdbP.h>
+#include <lsdb/lsdbP.h>
 
 #include "schema.i"
 

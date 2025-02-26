@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <sqlite3.h>
 
-#include <lsdb.h>
+#include <lsdb/lsdb.h>
 
 struct _lsdb_t {
     sqlite3 *db;

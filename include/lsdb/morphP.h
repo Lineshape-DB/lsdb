@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <gsl/gsl_spline.h>
 
-#include <morph.h>
+#include <lsdb/morph.h>
 
 struct _morph_t {
     size_t np;
