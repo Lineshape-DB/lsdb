@@ -453,29 +453,37 @@ int main(int argc, char **argv)
         ;
     } else
     if (action == LSDBU_ACTION_ADD_MODEL) {
-        int rid = lsdb_add_model(lsdb, mname, mdescr);
-        if (rid <= 0) {
+        id = lsdb_add_model(lsdb, mname, mdescr);
+        if (id > 0) {
+            fprintf(lsdbu->fp_out, "OK: id = %ld\n", id);
+	} else {
             fprintf(stderr, "Adding radiators failed\n");
             OK = false;
         }
     } else
     if (action == LSDBU_ACTION_ADD_ENV) {
-        int rid = lsdb_add_environment(lsdb, ename, edescr);
-        if (rid <= 0) {
+        id = lsdb_add_environment(lsdb, ename, edescr);
+        if (id > 0) {
+            fprintf(lsdbu->fp_out, "OK: id = %ld\n", id);
+	} else {
             fprintf(stderr, "Adding radiators failed\n");
             OK = false;
         }
     } else
     if (action == LSDBU_ACTION_ADD_RADIATOR) {
         id = lsdb_add_radiator(lsdb, symbol, anum, mass, zsp);
-        if (id <= 0) {
+        if (id > 0) {
+            fprintf(lsdbu->fp_out, "OK: id = %ld\n", id);
+	} else {
             fprintf(stderr, "Adding radiators failed\n");
             OK = false;
         }
     } else
     if (action == LSDBU_ACTION_ADD_LINE) {
         id = lsdb_add_line(lsdb, lsdbu->rid, lname, w0);
-        if (id <= 0) {
+        if (id > 0) {
+            fprintf(lsdbu->fp_out, "OK: id = %ld\n", id);
+	} else {
             fprintf(stderr, "Adding line failed\n");
             OK = false;
         }
