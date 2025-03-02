@@ -238,6 +238,10 @@ int main(int argc, char **argv)
 
         for (unsigned int i = 0; i < NPOINTS; i++) {
             double x = xmin + i*(xmax - xmin)/(NPOINTS - 1);
+            /* safety check against rounding error */
+            if (x > xmax) {
+                x = xmax;
+            }
 
             double r = morph_eval(m, ti, x, normalize)/s;
 

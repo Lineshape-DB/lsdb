@@ -121,6 +121,10 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
 
             for (unsigned int i = 0; i < len; i++) {
                 x = xmin + i*(xmax - xmin)/(len - 1);
+                /* safety check against rounding error */
+                if (x > xmax) {
+                    x = xmax;
+                }
                 r = morph_eval(m, t, x, false);
 
                 xm1[i] = x;
@@ -141,6 +145,10 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
 
             for (unsigned int i = 0; i < len; i++) {
                 x = xmin + i*(xmax - xmin)/(len - 1);
+                /* safety check against rounding error */
+                if (x > xmax) {
+                    x = xmax;
+                }
                 r = morph_eval(m, t, x, false);
 
                 xm2[i] = x;
@@ -160,6 +168,10 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
             double dx = (xmax - xmin)/(len - 1);
             for (unsigned int i = 0; i < len; i++) {
                 x = xmin + i*dx;
+                /* safety check against rounding error */
+                if (x > xmax) {
+                    x = xmax;
+                }
                 r = morph_eval(m, t, x, false);
 
                 dsi->x[i] = x;
