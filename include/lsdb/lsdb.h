@@ -5,10 +5,18 @@
 #define LSDB_FAILURE    1
 
 typedef enum {
-    LSDB_OPEN_RO,
-    LSDB_OPEN_RW,
-    LSDB_OPEN_INIT
+    LSDB_ACCESS_RO,
+    LSDB_ACCESS_RW,
+    LSDB_ACCESS_INIT
 } lsdb_access_t;
+
+typedef enum {
+    LSDB_UNITS_NONE = 0,
+    LSDB_UNITS_INV_CM,
+    LSDB_UNITS_EV,
+    LSDB_UNITS_AU,
+    LSDB_UNITS_CUSTOM = 99
+} lsdb_units_t;
 
 typedef struct _lsdb_t lsdb_t;
 
@@ -69,6 +77,9 @@ typedef int (*lsdb_dataset_sink_t)(const lsdb_t *lsdb,
 
 lsdb_t *lsdb_open(const char *fname, lsdb_access_t access);
 void lsdb_close(lsdb_t *lsdb);
+
+int lsdb_set_units(lsdb_t *lsdb, lsdb_units_t units);
+lsdb_units_t lsdb_get_units(const lsdb_t *lsdb);
 
 int lsdb_add_model(lsdb_t *lsdb, const char *name, const char *descr);
 int lsdb_get_models(const lsdb_t *lsdb,

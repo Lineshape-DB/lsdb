@@ -93,10 +93,10 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
     memset(lsdb, 0, sizeof(lsdb_t));
     lsdb->err_fp = stderr;
 
-    if (access == LSDB_OPEN_RW) {
+    if (access == LSDB_ACCESS_RW) {
         flags = SQLITE_OPEN_READWRITE;
     } else
-    if (access == LSDB_OPEN_INIT) {
+    if (access == LSDB_ACCESS_INIT) {
         flags = SQLITE_OPEN_CREATE|SQLITE_OPEN_READWRITE;
     } else {
         flags = SQLITE_OPEN_READONLY;
@@ -118,7 +118,7 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
         return NULL;
     }
 
-    if (access == LSDB_OPEN_INIT) {
+    if (access == LSDB_ACCESS_INIT) {
         int i = 0;
         while ((sql = schema_str[i])) {
             rc = sqlite3_exec(lsdb->db, sql, NULL, NULL, &errmsg);
@@ -140,9 +140,60 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
             lsdb_close(lsdb);
             return NULL;
         }
+
+        if (lsdb->db_format != 1) {
+            fprintf(stderr, "Unsupported DB format version %d\n", lsdb->db_format);
+            lsdb_close(lsdb);
+            return NULL;
+        }
+
+        /* obtain units */
+        sql = "SELECT value FROM lsdb WHERE property = 'units'";
+
+        rc = sqlite3_exec(lsdb->db, sql, format_cb, &lsdb->units, &errmsg);
+        if (rc != SQLITE_OK) {
+            fprintf(stderr, "Wrong DB format\n");
+            lsdb_close(lsdb);
+            return NULL;
+        }
     }
 
     return lsdb;
+}
+
+int lsdb_set_units(lsdb_t *lsdb, lsdb_units_t units)
+{
+    sqlite3_stmt *stmt;
+    int rc;
+    char *sql = "UPDATE lsdb SET value=? WHERE property = 'units'";
+
+    if (!lsdb) {
+        return LSDB_FAILURE;
+    }
+
+    sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
+
+    sqlite3_bind_int(stmt, 1, units);
+
+    rc = sqlite3_step(stmt);
+
+    sqlite3_finalize(stmt);
+
+    if (rc == SQLITE_DONE) {
+        if (sqlite3_changes(lsdb->db) == 1) {
+            lsdb->units = units;
+            return LSDB_SUCCESS;
+        } else {
+            return LSDB_FAILURE;
+        }
+    } else {
+        fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+        return LSDB_FAILURE;
+    }
+}
+
+lsdb_units_t lsdb_get_units(const lsdb_t *lsdb) {
+    return lsdb->units;
 }
 
 static int lsdb_del_entity(lsdb_t *lsdb, const char *tname, unsigned long id)

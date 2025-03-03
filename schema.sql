@@ -49,3 +49,4 @@ CREATE TABLE data (
 );
 
 INSERT INTO lsdb (property, value) VALUES ('format', 1);
+INSERT INTO lsdb (property, value) VALUES ('units', 0);

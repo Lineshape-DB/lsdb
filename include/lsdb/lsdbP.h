@@ -7,8 +7,9 @@
 #include <lsdb/lsdb.h>
 
 struct _lsdb_t {
-    sqlite3 *db;
-    int   db_format;
+    sqlite3     *db;
+    int          db_format;
+    lsdb_units_t units;
 
     FILE *err_fp;
 

@@ -4,9 +4,23 @@ namespace LSDB {
     public const int SUCCESS;
     public const int FAILURE;
 
-    public const int OPEN_RO;
-    public const int OPEN_RW;
-    public const int OPEN_INIT;
+    [Compact]
+    [CCode (cname = "lsdb_access_t")]
+    public enum Access {
+        RO,
+        RW,
+        INIT
+    }
+
+    [Compact]
+    [CCode (cname = "lsdb_units_t")]
+    public enum Units {
+        NONE,
+        INV_CM,
+        EV,
+        AU,
+        CUSTOM
+    }
 
     [Compact]
     [CCode (cname = "lsdb_model_t", destroy_function = "")]
@@ -82,7 +96,10 @@ namespace LSDB {
     [CCode (cname = "lsdb_t", cprefix = "lsdb_", free_function = "lsdb_close")]
     public class Lsdb {
         [CCode (cname = "lsdb_open")]
-        public Lsdb(string fname, int access);
+        public Lsdb(string fname, Access access);
+
+        [CCode (cname = "lsdb_get_units")]
+        public int get_units();
 
         [CCode (cname = "lsdb_get_models")]
         public int get_models(ModelSink sink);

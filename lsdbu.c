@@ -8,17 +8,20 @@
 
 #include <lsdb/lsdb.h>
 
-#define LSDBU_ACTION_NONE           0
-#define LSDBU_ACTION_INFO           1
-#define LSDBU_ACTION_INIT           2
-#define LSDBU_ACTION_ADD_MODEL      3
-#define LSDBU_ACTION_ADD_ENV        4
-#define LSDBU_ACTION_ADD_RADIATOR   5
-#define LSDBU_ACTION_ADD_LINE       6
-#define LSDBU_ACTION_ADD_DATA       7
-#define LSDBU_ACTION_DEL_ENTITY     8
-#define LSDBU_ACTION_GET_DATA       9
-#define LSDBU_ACTION_INTERPOLATE   10
+enum {
+    LSDBU_ACTION_NONE,
+    LSDBU_ACTION_INFO,
+    LSDBU_ACTION_INIT,
+    LSDBU_ACTION_SET_UNITS,
+    LSDBU_ACTION_ADD_MODEL,
+    LSDBU_ACTION_ADD_ENV,
+    LSDBU_ACTION_ADD_RADIATOR,
+    LSDBU_ACTION_ADD_LINE,
+    LSDBU_ACTION_ADD_DATA,
+    LSDBU_ACTION_DEL_ENTITY,
+    LSDBU_ACTION_GET_DATA,
+    LSDBU_ACTION_INTERPOLATE
+};
 
 typedef struct {
     FILE *fp_out;
@@ -106,13 +109,39 @@ static int line_sink(const lsdb_t *lsdb,
     const lsdb_line_t *l, void *udata)
 {
     lsdbu_t *lsdbu = udata;
+    lsdb_units_t units = lsdb_get_units(lsdb);
+    double w_cm, e_eV;
 
     if (lsdbu->lid != 0 && l->id != lsdbu->lid) {
         return LSDB_SUCCESS;
     }
 
-    fprintf(lsdbu->fp_out, "    id = %lu: \"%s\" (%g cm^-1 => %g eV)\n",
-        l->id, l->name, l->energy, l->energy/8065.5);
+    switch (units) {
+    case LSDB_UNITS_INV_CM:
+        w_cm = l->energy;
+        e_eV = l->energy/8065.54394;
+        break;
+    case LSDB_UNITS_EV:
+        w_cm = l->energy*8065.54394;
+        e_eV = l->energy;
+        break;
+    case LSDB_UNITS_AU:
+        w_cm = l->energy*219474.631;
+        e_eV = l->energy*27.211386;
+        break;
+    default:
+        w_cm = 0.0;
+        e_eV = 0.0;
+        break;
+    }
+
+    fprintf(lsdbu->fp_out, "    id = %lu: \"%s\"", l->id, l->name);
+
+    if (e_eV > 0.0) {
+        fprintf(lsdbu->fp_out, " (%g cm^-1 => %g eV)\n", w_cm, e_eV);
+    } else {
+        fputc('\n', lsdbu->fp_out);
+    }
 
     fprintf(lsdbu->fp_out, "    Datasets:\n");
     lsdb_get_datasets(lsdb, l->id, dataset_sink, lsdbu);
@@ -194,6 +223,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -p                    print interpolated lineshape\n");
     fprintf(out, "  -c                    convolve with the Doppler broadening\n");
     fprintf(out, "  -I                    initialize the DB\n");
+    fprintf(out, "  -U <units>            set units (1/cm|eV|au|custom) [none]\n");
     fprintf(out, "  -M <name[,descr]>     add a model\n");
     fprintf(out, "  -E <name[,descr]>     add an environment\n");
     fprintf(out, "  -R <sym,A,Zsp,M>      add a radiator\n");
@@ -209,7 +239,7 @@ int main(int argc, char **argv)
 
     int action = LSDBU_ACTION_NONE;
     char *dbfile;
-    int db_access = LSDB_OPEN_RO;
+    int db_access = LSDB_ACCESS_RO;
     lsdb_t *lsdb;
     bool OK = true;
     FILE *fp_f = NULL;
@@ -222,13 +252,14 @@ int main(int argc, char **argv)
     double mass = 0, w0 = 0, *x = NULL, *y = NULL;
     size_t len;
     bool doppler = false;
+    lsdb_units_t units = LSDB_UNITS_NONE;
 
     int opt;
 
     memset(lsdbu, 0, sizeof(lsdbu_t));
     lsdbu->fp_out = stdout;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIM:E:R:L:D:Xh")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIU:M:E:R:L:D:Xh")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -303,6 +334,24 @@ int main(int argc, char **argv)
             break;
         case 'I':
             action = LSDBU_ACTION_INIT;
+            break;
+        case 'U':
+            action = LSDBU_ACTION_SET_UNITS;
+            if (!strcmp(optarg, "1/cm")) {
+                units = LSDB_UNITS_INV_CM;
+            } else
+            if (!strcmp(optarg, "eV")) {
+                units = LSDB_UNITS_EV;
+            } else
+            if (!strcmp(optarg, "au")) {
+                units = LSDB_UNITS_AU;
+            } else
+            if (!strcmp(optarg, "custom")) {
+                units = LSDB_UNITS_CUSTOM;
+            } else {
+                fprintf(stderr, "Unrecognized units %s\n", optarg);
+                exit(1);
+            }
             break;
         case 'M':
             action = LSDBU_ACTION_ADD_MODEL;
@@ -423,18 +472,19 @@ int main(int argc, char **argv)
     case LSDBU_ACTION_INFO:
     case LSDBU_ACTION_GET_DATA:
     case LSDBU_ACTION_INTERPOLATE:
-        db_access = LSDB_OPEN_RO;
+        db_access = LSDB_ACCESS_RO;
         break;
     case LSDBU_ACTION_INIT:
-        db_access = LSDB_OPEN_INIT;
+        db_access = LSDB_ACCESS_INIT;
         break;
+    case LSDBU_ACTION_SET_UNITS:
     case LSDBU_ACTION_ADD_MODEL:
     case LSDBU_ACTION_ADD_ENV:
     case LSDBU_ACTION_ADD_RADIATOR:
     case LSDBU_ACTION_ADD_LINE:
     case LSDBU_ACTION_ADD_DATA:
     case LSDBU_ACTION_DEL_ENTITY:
-        db_access = LSDB_OPEN_RW;
+        db_access = LSDB_ACCESS_RW;
         break;
     case LSDBU_ACTION_NONE:
     default:
@@ -451,6 +501,13 @@ int main(int argc, char **argv)
 
     if (action == LSDBU_ACTION_INIT) {
         ;
+    } else
+    if (action == LSDBU_ACTION_SET_UNITS) {
+        id = lsdb_set_units(lsdb, units);
+        if (lsdb_set_units(lsdb, units) != LSDB_SUCCESS) {
+            fprintf(stderr, "Setting units failed\n");
+            OK = false;
+        }
     } else
     if (action == LSDBU_ACTION_ADD_MODEL) {
         id = lsdb_add_model(lsdb, mname, mdescr);
@@ -555,6 +612,26 @@ int main(int argc, char **argv)
         }
     } else
     if (action == LSDBU_ACTION_INFO) {
+        lsdb_units_t units = lsdb_get_units(lsdb);
+        char *ustr = "none";
+        switch (units) {
+        case LSDB_UNITS_NONE:
+            ustr = "none";
+            break;
+        case LSDB_UNITS_INV_CM:
+            ustr = "cm^-1";
+            break;
+        case LSDB_UNITS_EV:
+            ustr = "eV";
+            break;
+        case LSDB_UNITS_AU:
+            ustr = "at. units";
+            break;
+        case LSDB_UNITS_CUSTOM:
+            ustr = "custom";
+            break;
+        }
+        fprintf(lsdbu->fp_out, "Units: %s\n", ustr);
         fprintf(lsdbu->fp_out, "Models:\n");
         lsdb_get_models(lsdb, model_sink, lsdbu);
         fprintf(lsdbu->fp_out, "Environments:\n");
