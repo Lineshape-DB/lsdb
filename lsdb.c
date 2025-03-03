@@ -77,7 +77,7 @@ static int format_cb(void *udata,
     return 0;
 }
 
-lsdb_t *lsdb_open(const char *fname, int access)
+lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
 {
     lsdb_t *lsdb = NULL;
 

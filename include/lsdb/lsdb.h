@@ -4,9 +4,11 @@
 #define LSDB_SUCCESS    0
 #define LSDB_FAILURE    1
 
-#define LSDB_OPEN_RO    0
-#define LSDB_OPEN_RW    1
-#define LSDB_OPEN_INIT  2
+typedef enum {
+    LSDB_OPEN_RO,
+    LSDB_OPEN_RW,
+    LSDB_OPEN_INIT
+} lsdb_access_t;
 
 typedef struct _lsdb_t lsdb_t;
 
@@ -65,7 +67,7 @@ typedef int (*lsdb_line_sink_t)(const lsdb_t *lsdb,
 typedef int (*lsdb_dataset_sink_t)(const lsdb_t *lsdb,
     const lsdb_dataset_t *cbdata, void *udata);
 
-lsdb_t *lsdb_open(const char *fname, int access);
+lsdb_t *lsdb_open(const char *fname, lsdb_access_t access);
 void lsdb_close(lsdb_t *lsdb);
 
 int lsdb_add_model(lsdb_t *lsdb, const char *name, const char *descr);
