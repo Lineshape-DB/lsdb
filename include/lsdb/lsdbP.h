@@ -6,6 +6,9 @@
 
 #include <lsdb/lsdb.h>
 
+#define LSDB_CONVERT_EV_TO_INV_CM   8065.54394
+#define LSDB_CONVERT_AU_TO_EV       27.2113862
+
 struct _lsdb_t {
     sqlite3     *db;
     int          db_format;

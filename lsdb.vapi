@@ -125,5 +125,11 @@ namespace LSDB {
 
         [CCode (cname = "lsdb_get_doppler_sigma")]
         public double get_doppler_sigma(ulong lid, double T);
+
+        [CCode (cname = "lsdb_convert_to_units", cprefix = "lsdb_")]
+        public double convert_to_units(Units to_units);
     }
+
+    [CCode (cname = "lsdb_convert_units", cprefix = "lsdb_")]
+    public double convert_units(Units from_units, Units to_units);
 }

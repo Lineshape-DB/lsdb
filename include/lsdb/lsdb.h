@@ -128,4 +128,7 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
 
 double lsdb_get_doppler_sigma(const lsdb_t *lsdb, unsigned long lid, double T);
 
+double lsdb_convert_units(lsdb_units_t from_units, lsdb_units_t to_units);
+double lsdb_convert_to_units(const lsdb_t *lsdb, lsdb_units_t to_units);
+
 #endif /* LSDB_H */

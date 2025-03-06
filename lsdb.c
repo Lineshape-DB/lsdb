@@ -833,3 +833,60 @@ int lsdb_get_closest_dids(const lsdb_t *lsdb,
         return LSDB_FAILURE;
     }
 }
+
+double lsdb_convert_units(lsdb_units_t from_units, lsdb_units_t to_units)
+{
+    double unit_scale = 0.0;
+
+    if (to_units == from_units) {
+        unit_scale = 1.0;
+    } else {
+        switch (to_units) {
+        case LSDB_UNITS_INV_CM:
+            switch (from_units) {
+            case LSDB_UNITS_EV:
+                unit_scale = LSDB_CONVERT_EV_TO_INV_CM;
+                break;
+            case LSDB_UNITS_AU:
+                unit_scale = LSDB_CONVERT_AU_TO_EV*LSDB_CONVERT_EV_TO_INV_CM;
+                break;
+            default:
+                break;
+            }
+            break;
+        case LSDB_UNITS_EV:
+            switch (from_units) {
+            case LSDB_UNITS_INV_CM:
+                unit_scale = 1.0/LSDB_CONVERT_EV_TO_INV_CM;
+                break;
+            case LSDB_UNITS_AU:
+                unit_scale = LSDB_CONVERT_AU_TO_EV;
+                break;
+            default:
+                break;
+            }
+            break;
+        case LSDB_UNITS_AU:
+            switch (from_units) {
+            case LSDB_UNITS_INV_CM:
+                unit_scale = 1.0/(LSDB_CONVERT_AU_TO_EV*LSDB_CONVERT_EV_TO_INV_CM);
+                break;
+            case LSDB_UNITS_EV:
+                unit_scale = 1.0/LSDB_CONVERT_AU_TO_EV;
+                break;
+            default:
+                break;
+            }
+            break;
+        default:
+            break;
+        }
+    }
+
+    return unit_scale;
+}
+
+double lsdb_convert_to_units(const lsdb_t *lsdb, lsdb_units_t to_units)
+{
+    return lsdb_convert_units(lsdb->units, to_units);
+}

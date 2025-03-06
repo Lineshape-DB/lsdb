@@ -116,24 +116,8 @@ static int line_sink(const lsdb_t *lsdb,
         return LSDB_SUCCESS;
     }
 
-    switch (units) {
-    case LSDB_UNITS_INV_CM:
-        w_cm = l->energy;
-        e_eV = l->energy/8065.54394;
-        break;
-    case LSDB_UNITS_EV:
-        w_cm = l->energy*8065.54394;
-        e_eV = l->energy;
-        break;
-    case LSDB_UNITS_AU:
-        w_cm = l->energy*219474.631;
-        e_eV = l->energy*27.211386;
-        break;
-    default:
-        w_cm = 0.0;
-        e_eV = 0.0;
-        break;
-    }
+    w_cm = l->energy*lsdb_convert_units(units, LSDB_UNITS_INV_CM);
+    e_eV = l->energy*lsdb_convert_units(units, LSDB_UNITS_EV);
 
     fprintf(lsdbu->fp_out, "    id = %lu: \"%s\"", l->id, l->name);
 
