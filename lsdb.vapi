@@ -5,7 +5,7 @@ namespace LSDB {
     public const int FAILURE;
 
     [Compact]
-    [CCode (cname = "lsdb_access_t")]
+    [CCode (cname = "lsdb_access_t", has_type_id = false)]
     public enum Access {
         RO,
         RW,
@@ -13,7 +13,7 @@ namespace LSDB {
     }
 
     [Compact]
-    [CCode (cname = "lsdb_units_t")]
+    [CCode (cname = "lsdb_units_t", has_type_id = false)]
     public enum Units {
         NONE,
         INV_CM,
