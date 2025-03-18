@@ -19,4 +19,12 @@ struct _lsdb_t {
     void *udata;
 };
 
+void lsdb_errmsg(const lsdb_t *lsdb, const char *fmt, ...);
+
+int lsdb_get_closest_dids(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double n, double T,
+    unsigned long *did1, unsigned long *did2,
+    unsigned long *did3, unsigned long *did4);
+
 #endif /* LSDBP_H */
