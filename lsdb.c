@@ -833,6 +833,48 @@ int lsdb_get_closest_dids(const lsdb_t *lsdb,
     }
 }
 
+int lsdb_get_limits(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double *nmin, double *nmax, double *Tmin, double *Tmax)
+{
+    const char *sql;
+    sqlite3_stmt *stmt;
+    int rc;
+
+    sql = "SELECT MIN(n), MAX(n), MIN(T), MAX(T)" \
+          " FROM datasets WHERE mid = ? AND eid = ? AND lid = ?";
+
+    sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
+
+    sqlite3_bind_int(stmt, 1, mid);
+    sqlite3_bind_int(stmt, 2, eid);
+    sqlite3_bind_int(stmt, 3, lid);
+
+    do {
+        rc = sqlite3_step(stmt);
+        switch (rc) {
+        case SQLITE_DONE:
+        case SQLITE_OK:
+            break;
+        case SQLITE_ROW:
+            *nmin = sqlite3_column_double(stmt, 0);
+            *nmax = sqlite3_column_double(stmt, 1);
+            *Tmin = sqlite3_column_double(stmt, 2);
+            *Tmax = sqlite3_column_double(stmt, 3);
+
+            break;
+        default:
+            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            sqlite3_finalize(stmt);
+            return LSDB_FAILURE;
+            break;
+        }
+    } while (rc == SQLITE_ROW);
+
+    sqlite3_finalize(stmt);
+    return LSDB_SUCCESS;
+}
+
 double lsdb_convert_units(lsdb_units_t from_units, lsdb_units_t to_units)
 {
     double unit_scale = 0.0;

@@ -118,6 +118,10 @@ void lsdb_dataset_data_free(lsdb_dataset_data_t *ds);
 
 lsdb_dataset_data_t *lsdb_dataset_data_new(double n, double T, size_t len);
 
+int lsdb_get_limits(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double *nmin, double *nmax, double *Tmin, double *Tmax);
+
 lsdb_interp_t *lsdb_prepare_interpolation(const lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
     double n, double T, unsigned int len);
