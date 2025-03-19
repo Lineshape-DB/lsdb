@@ -71,17 +71,17 @@ static int voigt_conv(double *y, size_t n, double dx, double sigma, double gamma
     return LSDB_SUCCESS;
 }
 
-lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
+
+lsdb_interp_t *lsdb_prepare_interpolation(const lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
-    double n, double T, unsigned int len, double sigma, double gamma)
+    double n, double T, unsigned int len)
 {
     long unsigned did1, did2, did3, did4;
     int rc;
     bool OK = true;
-    lsdb_dataset_data_t *dsi = NULL;
+    lsdb_interp_t *interp = NULL;
 
-    rc = lsdb_get_closest_dids(lsdb, mid, eid, lid, n, T,
-        &did1, &did2, &did3, &did4);
+    rc = lsdb_get_closest_dids(lsdb, mid, eid, lid, n, T, &did1, &did2, &did3, &did4);
     if (rc == LSDB_SUCCESS) {
         lsdb_dataset_data_t *ds1, *ds2, *ds3, *ds4;
 
@@ -90,9 +90,7 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
         ds3 = lsdb_get_dataset_data(lsdb, did3);
         ds4 = lsdb_get_dataset_data(lsdb, did4);
 
-        dsi = lsdb_dataset_data_new(n, T, len);
-
-        if (ds1 && ds2 && ds3 && ds4 && dsi) {
+        if (ds1 && ds2 && ds3 && ds4) {
             double n1 = ds1->n, n2 = ds2->n, n3 = ds3->n, n4 = ds4->n;
             double T1 = ds1->T, T2 = ds2->T, T3 = ds3->T, T4 = ds4->T;
             double xmin, xmax, t;
@@ -165,33 +163,14 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
                 t = sqrt(log(T/Tm1)/log(Tm2/Tm1));
             }
 
-            double dx = (xmax - xmin)/(len - 1);
-            for (unsigned int i = 0; i < len; i++) {
-                x = xmin + i*dx;
-                /* safety check against rounding error */
-                if (x > xmax) {
-                    x = xmax;
-                }
-                r = morph_eval(m, t, x, false);
-
-                dsi->x[i] = x;
-                dsi->y[i] = r;
-            }
+            interp = malloc(sizeof(lsdb_interp_t));
+            interp->morph = m;
+            interp->t     = t;
 
             free(xm1);
             free(xm2);
             free(ym1);
             free(ym2);
-
-            morph_free(m);
-
-            if (OK && (sigma > 0.0 || gamma > 0.0)) {
-                if (voigt_conv(dsi->y, len, dx, sigma, gamma)
-                    != LSDB_SUCCESS) {
-                    lsdb_errmsg(lsdb, "Convolution failed\n");
-                    OK = false;
-                }
-            }
         } else {
             lsdb_errmsg(lsdb, "Failed fetching dataset(s)\n");
             OK = false;
@@ -201,6 +180,78 @@ lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
         lsdb_dataset_data_free(ds2);
         lsdb_dataset_data_free(ds3);
         lsdb_dataset_data_free(ds4);
+    } else {
+        OK = false;
+    }
+
+    return OK ? interp:NULL;
+}
+
+void lsdb_interp_free(lsdb_interp_t *interp)
+{
+    if (interp) {
+        morph_free(interp->morph);
+        free(interp);
+    }
+}
+
+int lsdb_interp_get_domain(const lsdb_interp_t *interp, double *xmin, double *xmax)
+{
+    if (interp && morph_get_domain(interp->morph, xmin, xmax)) {
+        return LSDB_SUCCESS;
+    } else {
+        return LSDB_FAILURE;
+    }
+}
+
+double lsdb_interp_eval(const lsdb_interp_t *interp, double x, bool normalize)
+{
+    return morph_eval(interp->morph, interp->t, x, normalize);
+}
+
+lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double n, double T, unsigned int len, double sigma, double gamma)
+{
+    bool OK = true;
+    lsdb_dataset_data_t *dsi = NULL;
+    lsdb_interp_t *interp;
+
+    interp = lsdb_prepare_interpolation(lsdb, mid, eid, lid, n, T, len);
+    if (interp != NULL) {
+        dsi = lsdb_dataset_data_new(n, T, len);
+
+        if (dsi) {
+            double xmin, xmax;
+            double x, r;
+
+            lsdb_interp_get_domain(interp, &xmin, &xmax);
+
+            double dx = (xmax - xmin)/(len - 1);
+            for (unsigned int i = 0; i < len; i++) {
+                x = xmin + i*dx;
+                /* safety check against rounding error */
+                if (x > xmax) {
+                    x = xmax;
+                }
+                r = lsdb_interp_eval(interp, x, false);
+
+                dsi->x[i] = x;
+                dsi->y[i] = r;
+            }
+
+            if (OK && (sigma > 0.0 || gamma > 0.0)) {
+                if (voigt_conv(dsi->y, len, dx, sigma, gamma) != LSDB_SUCCESS) {
+                    lsdb_errmsg(lsdb, "Convolution failed\n");
+                    OK = false;
+                }
+            }
+        } else {
+            lsdb_errmsg(lsdb, "Failed allocating dataset\n");
+            OK = false;
+        }
+
+        lsdb_interp_free(interp);
     } else {
         OK = false;
     }

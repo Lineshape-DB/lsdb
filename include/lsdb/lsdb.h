@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #ifndef LSDB_H
 #define LSDB_H
 
@@ -19,6 +21,8 @@ typedef enum {
 } lsdb_units_t;
 
 typedef struct _lsdb_t lsdb_t;
+
+typedef struct _lsdb_interp_t lsdb_interp_t;
 
 typedef struct {
     unsigned long id;
@@ -114,9 +118,15 @@ void lsdb_dataset_data_free(lsdb_dataset_data_t *ds);
 
 lsdb_dataset_data_t *lsdb_dataset_data_new(double n, double T, size_t len);
 
+lsdb_interp_t *lsdb_prepare_interpolation(const lsdb_t *lsdb,
+    unsigned int mid, unsigned int eid, unsigned int lid,
+    double n, double T, unsigned int len);
 lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
     double n, double T, unsigned int len, double gamma, double sigma);
+void lsdb_interp_free(lsdb_interp_t *interp);
+int lsdb_interp_get_domain(const lsdb_interp_t *interp, double *xmin, double *xmax);
+double lsdb_interp_eval(const lsdb_interp_t *interp, double x, bool normalize);
 
 double lsdb_get_doppler_sigma(const lsdb_t *lsdb, unsigned long lid, double T);
 

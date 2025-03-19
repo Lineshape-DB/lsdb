@@ -5,6 +5,7 @@
 #include <sqlite3.h>
 
 #include <lsdb/lsdb.h>
+#include <lsdb/morph.h>
 
 #define LSDB_CONVERT_EV_TO_INV_CM   8065.54394
 #define LSDB_CONVERT_AU_TO_EV       27.2113862
@@ -17,6 +18,11 @@ struct _lsdb_t {
     FILE *err_fp;
 
     void *udata;
+};
+
+struct _lsdb_interp_t {
+    morph_t *morph;
+    double   t;
 };
 
 void lsdb_errmsg(const lsdb_t *lsdb, const char *fmt, ...);
