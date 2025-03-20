@@ -15,8 +15,6 @@ struct _lsdb_t {
     int          db_format;
     lsdb_units_t units;
 
-    FILE *err_fp;
-
     void *udata;
 };
 

@@ -56,9 +56,10 @@ void lsdb_close(lsdb_t *lsdb)
 void lsdb_errmsg(const lsdb_t *lsdb, const char *fmt, ...)
 {
     va_list args;
+    (void) lsdb;
 
     va_start(args, fmt);
-    vfprintf(lsdb->err_fp, fmt, args);
+    vfprintf(stderr, fmt, args);
     va_end(args);
 }
 
@@ -90,7 +91,6 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
         return NULL;
     }
     memset(lsdb, 0, sizeof(lsdb_t));
-    lsdb->err_fp = stderr;
 
     if (access == LSDB_ACCESS_RW) {
         flags = SQLITE_OPEN_READWRITE;
@@ -103,7 +103,7 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
 
     rc = sqlite3_open_v2(fname, &lsdb->db, flags, NULL);
     if (rc) {
-        fprintf(stderr, "Cannot open database \"%s\": %s\n",
+        lsdb_errmsg(lsdb, "Cannot open database \"%s\": %s\n",
             fname, sqlite3_errmsg(lsdb->db));
         lsdb_close(lsdb);
         return NULL;
@@ -111,7 +111,7 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
 
     rc = sqlite3_exec(lsdb->db, "PRAGMA foreign_keys = ON", NULL, NULL, &errmsg);
     if (rc != SQLITE_OK) {
-        fprintf(stderr, "SQL error: %s\n", errmsg);
+        lsdb_errmsg(lsdb, "SQL error: %s\n", errmsg);
         sqlite3_free(errmsg);
         lsdb_close(lsdb);
         return NULL;
@@ -122,7 +122,7 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
         while ((sql = schema_str[i])) {
             rc = sqlite3_exec(lsdb->db, sql, NULL, NULL, &errmsg);
             if (rc != SQLITE_OK) {
-                fprintf(stderr, "SQL error: %s\n", errmsg);
+                lsdb_errmsg(lsdb, "SQL error: %s\n", errmsg);
                 sqlite3_free(errmsg);
                 lsdb_close(lsdb);
                 return NULL;
@@ -135,13 +135,13 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
 
         rc = sqlite3_exec(lsdb->db, sql, format_cb, &lsdb->db_format, &errmsg);
         if (rc != SQLITE_OK) {
-            fprintf(stderr, "Wrong DB format\n");
+            lsdb_errmsg(lsdb, "Wrong DB format\n");
             lsdb_close(lsdb);
             return NULL;
         }
 
         if (lsdb->db_format != 1) {
-            fprintf(stderr, "Unsupported DB format version %d\n", lsdb->db_format);
+            lsdb_errmsg(lsdb, "Unsupported DB format version %d\n", lsdb->db_format);
             lsdb_close(lsdb);
             return NULL;
         }
@@ -151,7 +151,7 @@ lsdb_t *lsdb_open(const char *fname, lsdb_access_t access)
 
         rc = sqlite3_exec(lsdb->db, sql, format_cb, &lsdb->units, &errmsg);
         if (rc != SQLITE_OK) {
-            fprintf(stderr, "Wrong DB format\n");
+            lsdb_errmsg(lsdb, "Wrong DB format\n");
             lsdb_close(lsdb);
             return NULL;
         }
@@ -186,7 +186,7 @@ int lsdb_set_units(lsdb_t *lsdb, lsdb_units_t units)
             return LSDB_FAILURE;
         }
     } else {
-        fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+        lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
         return LSDB_FAILURE;
     }
 }
@@ -222,7 +222,7 @@ static int lsdb_del_entity(lsdb_t *lsdb, const char *tname, unsigned long id)
             return LSDB_FAILURE;
         }
     } else {
-        fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+        lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
         return LSDB_FAILURE;
     }
 }
@@ -291,7 +291,7 @@ int lsdb_get_models(const lsdb_t *lsdb,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
             return LSDB_FAILURE;
             break;
@@ -372,7 +372,7 @@ int lsdb_get_environments(const lsdb_t *lsdb,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
             return LSDB_FAILURE;
             break;
@@ -458,7 +458,7 @@ int lsdb_get_radiators(const lsdb_t *lsdb,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
             return LSDB_FAILURE;
             break;
@@ -544,7 +544,7 @@ int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
             return LSDB_FAILURE;
             break;
@@ -630,7 +630,7 @@ int lsdb_get_line_properties(const lsdb_t *lsdb, unsigned long lid,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
             return LSDB_FAILURE;
             break;
@@ -749,7 +749,7 @@ int lsdb_get_datasets(const lsdb_t *lsdb, unsigned long lid,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
             return LSDB_FAILURE;
             break;
@@ -905,7 +905,7 @@ int lsdb_get_closest_dids(const lsdb_t *lsdb,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             break;
         }
     } while (rc == SQLITE_ROW && !found);
@@ -950,7 +950,7 @@ int lsdb_get_limits(const lsdb_t *lsdb,
 
             break;
         default:
-            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
             sqlite3_finalize(stmt);
             return LSDB_FAILURE;
             break;
