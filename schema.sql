@@ -32,6 +32,14 @@ CREATE TABLE lines (
     UNIQUE (rid, name)
 );
 
+CREATE TABLE line_properties (
+    id     INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    lid    INTEGER NOT NULL REFERENCES lines(id) ON DELETE CASCADE,
+    name   TEXT NOT NULL,
+    value  TEXT NOT NULL,
+    UNIQUE (lid, name)
+);
+
 CREATE TABLE datasets (
     id  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     lid INTEGER NOT NULL REFERENCES lines(id) ON DELETE CASCADE,

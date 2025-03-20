@@ -561,6 +561,92 @@ int lsdb_del_line(lsdb_t *lsdb, unsigned long id)
     return lsdb_del_entity(lsdb, "lines", id);
 }
 
+int lsdb_add_line_property(lsdb_t *lsdb,
+    unsigned int lid, const char *name, const char *value)
+{
+    const char *sql;
+    sqlite3_stmt *stmt;
+    int rc;
+    int pid;
+
+    sql = "INSERT INTO line_properties (lid, name, value) VALUES (?, ?, ?)";
+
+    sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
+
+    sqlite3_bind_int(stmt, 1, lid);
+    SQLITE3_BIND_STR(stmt, 2, name);
+    SQLITE3_BIND_STR(stmt, 3, value);
+
+    rc = sqlite3_step(stmt);
+    if (rc == SQLITE_DONE) {
+        pid = sqlite3_last_insert_rowid(lsdb->db);
+    } else {
+        lsdb_errmsg(lsdb, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+        pid = -1;
+    }
+
+    sqlite3_finalize(stmt);
+
+    return pid;
+}
+
+int lsdb_get_line_properties(const lsdb_t *lsdb, unsigned long lid,
+    lsdb_line_property_sink_t sink, void *udata)
+{
+    sqlite3_stmt *stmt;
+    const char *sql;
+    int rc;
+
+    if (!lsdb) {
+        return LSDB_FAILURE;
+    }
+
+    sql = "SELECT id, name, value" \
+          " FROM line_properties" \
+          " WHERE lid = ?" \
+          " ORDER BY id";
+
+    sqlite3_prepare_v2(lsdb->db, sql, -1, &stmt, NULL);
+
+    sqlite3_bind_int(stmt, 1, lid);
+
+    do {
+        lsdb_line_property_t p;
+
+        rc = sqlite3_step(stmt);
+        switch (rc) {
+        case SQLITE_DONE:
+        case SQLITE_OK:
+            break;
+        case SQLITE_ROW:
+            p.id    = sqlite3_column_int(stmt, 0);
+            p.name  = (char *) sqlite3_column_text(stmt, 1);
+            p.value = (char *) sqlite3_column_text(stmt, 2);
+
+            if (sink(lsdb, &p, udata) != LSDB_SUCCESS) {
+                sqlite3_finalize(stmt);
+                return LSDB_FAILURE;
+            }
+
+            break;
+        default:
+            fprintf(stderr, "SQL error: %s\n", sqlite3_errmsg(lsdb->db));
+            sqlite3_finalize(stmt);
+            return LSDB_FAILURE;
+            break;
+        }
+    } while (rc == SQLITE_ROW);
+
+    sqlite3_finalize(stmt);
+
+    return LSDB_SUCCESS;
+}
+
+int lsdb_del_line_property(lsdb_t *lsdb, unsigned long id)
+{
+    return lsdb_del_entity(lsdb, "line_properties", id);
+}
+
 int lsdb_add_dataset(lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
     double n, double T,

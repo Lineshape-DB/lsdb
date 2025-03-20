@@ -66,6 +66,12 @@ typedef struct {
     double *y;
 } lsdb_dataset_data_t;
 
+typedef struct {
+    unsigned long id;
+    const char *name;
+    const char *value;
+} lsdb_line_property_t;
+
 typedef int (*lsdb_model_sink_t)(const lsdb_t *lsdb,
     const lsdb_model_t *m, void *udata);
 typedef int (*lsdb_environment_sink_t)(const lsdb_t *lsdb,
@@ -76,6 +82,8 @@ typedef int (*lsdb_line_sink_t)(const lsdb_t *lsdb,
     const lsdb_line_t *l, void *udata);
 typedef int (*lsdb_dataset_sink_t)(const lsdb_t *lsdb,
     const lsdb_dataset_t *cbdata, void *udata);
+typedef int (*lsdb_line_property_sink_t)(const lsdb_t *lsdb,
+    const lsdb_line_property_t *l, void *udata);
 
 lsdb_t *lsdb_open(const char *fname, lsdb_access_t access);
 void lsdb_close(lsdb_t *lsdb);
@@ -104,6 +112,12 @@ int lsdb_add_line(lsdb_t *lsdb,
 int lsdb_get_lines(const lsdb_t *lsdb, unsigned long rid,
     lsdb_line_sink_t sink, void *udata);
 int lsdb_del_line(lsdb_t *lsdb, unsigned long id);
+
+int lsdb_add_line_property(lsdb_t *lsdb,
+    unsigned int lid, const char *name, const char *value);
+int lsdb_get_line_properties(const lsdb_t *lsdb, unsigned long lid,
+    lsdb_line_property_sink_t sink, void *udata);
+int lsdb_del_line_property(lsdb_t *lsdb, unsigned long id);
 
 int lsdb_add_dataset(lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
