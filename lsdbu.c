@@ -85,22 +85,35 @@ static int read_in(FILE *fp, double **xap, double **yap, size_t *lenp)
     return LSDB_SUCCESS;
 }
 
-static int dataset_sink(const lsdb_t *lsdb,
-    const lsdb_dataset_t *cbdata, void *udata)
+static int line_property_sink(const lsdb_t *lsdb,
+    const lsdb_line_property_t *p, void *udata)
 {
     lsdbu_t *lsdbu = udata;
     (void)(lsdb);
 
-    if ((lsdbu->eid != 0 && cbdata->eid != lsdbu->eid) ||
-        (lsdbu->mid != 0 && cbdata->mid != lsdbu->mid) ||
-        (lsdbu->n   >  0 && cbdata->n   != lsdbu->n)   ||
-        (lsdbu->T   >  0 && cbdata->T   != lsdbu->T)) {
+    fprintf(lsdbu->fp_out,
+        "      id = %lu: \"%s\" => \"%s\"\n",
+        p->id, p->name, p->value);
+
+    return LSDB_SUCCESS;
+}
+
+static int dataset_sink(const lsdb_t *lsdb,
+    const lsdb_dataset_t *ds, void *udata)
+{
+    lsdbu_t *lsdbu = udata;
+    (void)(lsdb);
+
+    if ((lsdbu->eid != 0 && ds->eid != lsdbu->eid) ||
+        (lsdbu->mid != 0 && ds->mid != lsdbu->mid) ||
+        (lsdbu->n   >  0 && ds->n   != lsdbu->n)   ||
+        (lsdbu->T   >  0 && ds->T   != lsdbu->T)) {
         return LSDB_SUCCESS;
     }
 
     fprintf(lsdbu->fp_out,
         "      id = %lu: (mid = %lu, eid = %lu, n_e = %g cm^-3, T = %g eV)\n",
-        cbdata->id, cbdata->mid, cbdata->eid, cbdata->n, cbdata->T);
+        ds->id, ds->mid, ds->eid, ds->n, ds->T);
 
     return LSDB_SUCCESS;
 }
@@ -126,6 +139,9 @@ static int line_sink(const lsdb_t *lsdb,
     } else {
         fputc('\n', lsdbu->fp_out);
     }
+
+    fprintf(lsdbu->fp_out, "    Properties:\n");
+    lsdb_get_line_properties(lsdb, l->id, line_property_sink, lsdbu);
 
     fprintf(lsdbu->fp_out, "    Datasets:\n");
     lsdb_get_datasets(lsdb, l->id, dataset_sink, lsdbu);
@@ -227,7 +243,7 @@ int main(int argc, char **argv)
     lsdb_t *lsdb;
     bool OK = true;
     FILE *fp_f = NULL;
-    long int id = 0, did = 0;
+    long int id = 0, did = 0, pid = 0;
     const char *token;
     int ntoken = 0;
     const char *mname = NULL, *ename = NULL, *mdescr = "", *edescr = "";
@@ -561,6 +577,12 @@ int main(int argc, char **argv)
         fclose(fp_f);
     } else
     if (action == LSDBU_ACTION_DEL_ENTITY) {
+        if (pid > 0) {
+            if (lsdb_del_line_property(lsdb, pid)) {
+                fprintf(stderr, "Operation failed\n");
+                OK = false;
+            }
+        } else
         if (did > 0) {
             if (lsdb_del_dataset(lsdb, did)) {
                 fprintf(stderr, "Operation failed\n");
