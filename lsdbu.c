@@ -143,6 +143,15 @@ static int line_sink(const lsdb_t *lsdb,
         fputc('\n', lsdbu->fp_out);
     }
 
+    if (lsdbu->mid > 0 && lsdbu->eid > 0) {
+        double n_min, n_max, T_min, T_max;
+        lsdb_get_limits(lsdb, lsdbu->mid, lsdbu->eid, l->id,
+            &n_min, &n_max, &T_min, &T_max);
+        fprintf(lsdbu->fp_out, "    Dataset domains:\n");
+        fprintf(lsdbu->fp_out, "      n: (%g - %g) 1/cm^3\n", n_min, n_max);
+        fprintf(lsdbu->fp_out, "      T: (%g - %g) eV\n", T_min, T_max);
+    }
+
     if (lsdbu->verbose) {
         fprintf(lsdbu->fp_out, "    Properties:\n");
         lsdb_get_line_properties(lsdb, l->id, line_property_sink, lsdbu);
