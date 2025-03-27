@@ -24,7 +24,10 @@ enum {
 };
 
 typedef struct {
-    FILE *fp_out;
+    FILE         *fp_out;
+
+    bool          verbose;
+
     unsigned long mid;
     unsigned long eid;
     unsigned long rid;
@@ -134,17 +137,19 @@ static int line_sink(const lsdb_t *lsdb,
 
     fprintf(lsdbu->fp_out, "    id = %lu: \"%s\"", l->id, l->name);
 
-    if (e_eV > 0.0) {
+    if (lsdbu->verbose && e_eV > 0.0) {
         fprintf(lsdbu->fp_out, " (%g cm^-1 => %g eV)\n", w_cm, e_eV);
     } else {
         fputc('\n', lsdbu->fp_out);
     }
 
-    fprintf(lsdbu->fp_out, "    Properties:\n");
-    lsdb_get_line_properties(lsdb, l->id, line_property_sink, lsdbu);
+    if (lsdbu->verbose) {
+        fprintf(lsdbu->fp_out, "    Properties:\n");
+        lsdb_get_line_properties(lsdb, l->id, line_property_sink, lsdbu);
 
-    fprintf(lsdbu->fp_out, "    Datasets:\n");
-    lsdb_get_datasets(lsdb, l->id, dataset_sink, lsdbu);
+        fprintf(lsdbu->fp_out, "    Datasets:\n");
+        lsdb_get_datasets(lsdb, l->id, dataset_sink, lsdbu);
+    }
 
     return LSDB_SUCCESS;
 }
@@ -158,8 +163,14 @@ static int radiator_sink(const lsdb_t *lsdb,
         return LSDB_SUCCESS;
     }
 
-    fprintf(lsdbu->fp_out, "  id = %lu: \"%s\" (A = %d, Zsp = %d, mass = %g)\n",
-        r->id, r->sym, r->anum, r->zsp, r->mass);
+    fprintf(lsdbu->fp_out, "  id = %lu: \"%s\"", r->id, r->sym);
+
+    if (lsdbu->verbose) {
+        fprintf(lsdbu->fp_out, " (A = %d, Zsp = %d, mass = %g)\n",
+            r->anum, r->zsp, r->mass);
+    } else {
+        fputc('\n', lsdbu->fp_out);
+    }
 
     fprintf(lsdbu->fp_out, "  Lines:\n");
     lsdb_get_lines(lsdb, r->id, line_sink, lsdbu);
@@ -178,7 +189,7 @@ static int environment_sink(const lsdb_t *lsdb,
     }
 
     fprintf(lsdbu->fp_out, "  id = %lu: \"%s\"", e->id, e->name);
-    if (e->descr && strlen(e->descr) > 0) {
+    if (lsdbu->verbose && e->descr && strlen(e->descr) > 0) {
         fprintf(lsdbu->fp_out, " (%s)\n", e->descr);
     } else {
         fprintf(lsdbu->fp_out, "\n");
@@ -198,7 +209,7 @@ static int model_sink(const lsdb_t *lsdb,
     }
 
     fprintf(lsdbu->fp_out, "  id = %lu: \"%s\"", m->id, m->name);
-    if (m->descr && strlen(m->descr) > 0) {
+    if (lsdbu->verbose && m->descr && strlen(m->descr) > 0) {
         fprintf(lsdbu->fp_out, " (%s)\n", m->descr);
     } else {
         fprintf(lsdbu->fp_out, "\n");
@@ -230,6 +241,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -L <name,w0>          add a line\n");
     fprintf(out, "  -D <filename>         add a dataset\n");
     fprintf(out, "  -X                    delete an entity by its ID\n");
+    fprintf(out, "  -v                    be more verbose (together with \"-i\")\n");
     fprintf(out, "  -h                    print this help\n");
 }
 
@@ -258,8 +270,9 @@ int main(int argc, char **argv)
 
     memset(lsdbu, 0, sizeof(lsdbu_t));
     lsdbu->fp_out = stdout;
+    lsdbu->verbose = false;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIU:M:E:R:L:D:Xh")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIU:M:E:R:L:D:Xvh")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -450,6 +463,9 @@ int main(int argc, char **argv)
         case 'X':
             action = LSDBU_ACTION_DEL_ENTITY;
             break;
+        case 'v':
+            lsdbu->verbose = true;
+            break;
         case 'h':
             usage(argv[0], stdout);
             exit(0);
@@ -637,7 +653,9 @@ int main(int argc, char **argv)
             ustr = "custom";
             break;
         }
-        fprintf(lsdbu->fp_out, "Units: %s\n", ustr);
+        if (lsdbu->verbose) {
+            fprintf(lsdbu->fp_out, "Units: %s\n", ustr);
+        }
         fprintf(lsdbu->fp_out, "Models:\n");
         lsdb_get_models(lsdb, model_sink, lsdbu);
         fprintf(lsdbu->fp_out, "Environments:\n");
