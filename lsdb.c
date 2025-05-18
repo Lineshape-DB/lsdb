@@ -658,6 +658,11 @@ int lsdb_add_dataset(lsdb_t *lsdb,
     unsigned int i;
     int did;
 
+    if (len < 2 || !x || !y) {
+        lsdb_errmsg(lsdb, "Adding empty dataset refused\n");
+        return -1;
+    }
+
     sqlite3_exec(lsdb->db, "BEGIN", 0, 0, 0);
 
     sql = "INSERT INTO datasets (mid, eid, lid, n, T) VALUES (?, ?, ?, ?, ?)";
