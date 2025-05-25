@@ -141,7 +141,7 @@ lsdb_interp_t *lsdb_prepare_interpolation(const lsdb_t *lsdb,
     double n, double T, unsigned int len);
 lsdb_dataset_data_t *lsdb_get_interpolation(const lsdb_t *lsdb,
     unsigned int mid, unsigned int eid, unsigned int lid,
-    double n, double T, unsigned int len, double gamma, double sigma);
+    double n, double T, unsigned int len, double sigma, double gamma);
 void lsdb_interp_free(lsdb_interp_t *interp);
 int lsdb_interp_get_domain(const lsdb_interp_t *interp, double *xmin, double *xmax);
 double lsdb_interp_eval(const lsdb_interp_t *interp, double x, bool normalize);
