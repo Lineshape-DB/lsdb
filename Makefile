@@ -38,7 +38,7 @@ lsdbu$(EXE_EXT): $(LCOBJS) $(LSDBLIB)
 
 include Make.dep
 
-Make.dep: $(SRCS)
+Make.dep: $(SRCS) schema.i
 	@echo -n "Generating dependencies... "
 	@echo "# Generated automatically by \`make depend'" > $@
 	@$(CC) $(CFLAGS) -MM $(SRCS) >> $@
@@ -62,7 +62,7 @@ install: $(PROGS) include/lsdb/lsdb.h include/lsdb/morph.h $(LSDBLIB)
 
 clean:
 	$(RM) $(PROGS) $(COBJS) \
-	Make.dep tags ChangeLog *.bak \
+	Make.dep schema.i tags ChangeLog *.bak \
 	*.bb *.bbg *.da *.gcda *.gcno *.gcov
 
 depend: Make.dep
