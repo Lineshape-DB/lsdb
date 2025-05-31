@@ -16,11 +16,11 @@ INSTALLDIR = /usr/bin/install -c -d
 INSTALLDATA = /usr/bin/install -c -m 644
 
 prefix = $(DESTDIR)/usr/local
-exec_prefix = ${prefix}
-datarootdir = ${prefix}/share
+exec_prefix = $(prefix)
+datarootdir = $(prefix)/share
 
-BINDIR  = ${exec_prefix}/bin
-LIBDIR  = ${exec_prefix}/lib
-INCDIR  = ${prefix}/include
-PKGDIR  = ${datarootdir}/pkgconfig
-VAPIDIR = ${datarootdir}/vala/vapi
+BINDIR  = $(exec_prefix)/bin
+LIBDIR  = $(exec_prefix)/lib
+INCDIR  = $(prefix)/include
+PKGDIR  = $(datarootdir)/pkgconfig
+VAPIDIR = $(datarootdir)/vala/vapi

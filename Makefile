@@ -14,10 +14,10 @@ LCSRCS = lsdbu.c
 CHDRS  = include/lsdb/morph.h include/lsdb/morphP.h \
 	 include/lsdb/lsdb.h include/lsdb/lsdbP.h
 
-LIBOBJS = ${LIBSRCS:.c=.o}
+LIBOBJS = $(LIBSRCS:.c=.o)
 
-MCOBJS = ${MCSRCS:.c=.o}
-LCOBJS = ${LCSRCS:.c=.o}
+MCOBJS = $(MCSRCS:.c=.o)
+LCOBJS = $(LCSRCS:.c=.o)
 
 SRCS   = $(LIBSRCS) $(MCSRCS) $(LCSRCS)
 COBJS  = $(LIBOBJS) $(MCOBJS) $(LCOBJS)
