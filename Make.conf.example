@@ -15,7 +15,7 @@ INSTALL = /usr/bin/install -c
 INSTALLDIR = /usr/bin/install -c -d
 INSTALLDATA = /usr/bin/install -c -m 644
 
-prefix = /usr/local
+prefix = $(DESTDIR)/usr/local
 exec_prefix = ${prefix}
 datarootdir = ${prefix}/share
 
