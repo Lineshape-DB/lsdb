@@ -1,4 +1,6 @@
+ifeq ($(origin CC), default)
 CC = gcc
+endif
 DEBUG = -g
 LINT = -Wall -pedantic -Wextra
 OPTIMIZE = -O2
