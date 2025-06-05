@@ -112,6 +112,8 @@ namespace LSDB {
         public double[] y;
     }
 
+    public void get_version_numbers(out int major, out int minor, out int nano);
+
     [Compact]
     [CCode (cname = "lsdb_t", cprefix = "lsdb_", free_function = "lsdb_close")]
     public class Lsdb {

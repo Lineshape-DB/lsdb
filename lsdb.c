@@ -28,6 +28,13 @@
 #define SQLITE3_BIND_STR(stmt, id, txt) \
         sqlite3_bind_text(stmt, id, txt, -1, SQLITE_STATIC)
 
+void lsdb_get_version_numbers(int *major, int *minor, int *nano)
+{
+    *major = LSDB_VERSION_MAJOR;
+    *minor = LSDB_VERSION_MINOR;
+    *nano  = LSDB_VERSION_NANO;
+}
+
 void lsdb_dataset_data_free(lsdb_dataset_data_t *ds)
 {
     if (ds) {

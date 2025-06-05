@@ -271,7 +271,18 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -D <filename>         add a dataset\n");
     fprintf(out, "  -X                    delete an entity by its ID\n");
     fprintf(out, "  -v                    be more verbose (together with \"-i\")\n");
-    fprintf(out, "  -h                    print this help\n");
+    fprintf(out, "  -V                    print version info and exit\n");
+    fprintf(out, "  -h                    print this help and exit\n");
+}
+
+static void about(void)
+{
+    int major, minor, nano;
+    lsdb_get_version_numbers(&major, &minor, &nano);
+    fprintf(stdout, "lsdb-1.0 (using LSDB API v%d.%d.%d)\n",
+        major, minor, nano);
+    fprintf(stdout, "Copyright (C) 2025 Weizmann Institute of Science\n\n");
+    fprintf(stdout, "Written by Evgeny Stambulchik\n");
 }
 
 int main(int argc, char **argv)
@@ -301,7 +312,8 @@ int main(int argc, char **argv)
     lsdbu->fp_out = stdout;
     lsdbu->verbose = false;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIU:M:E:R:L:D:Xvh")) != -1) {
+    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIU:M:E:R:L:D:XvVh"))
+        != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -494,6 +506,10 @@ int main(int argc, char **argv)
             break;
         case 'v':
             lsdbu->verbose = true;
+            break;
+        case 'V':
+            about();
+            exit(0);
             break;
         case 'h':
             usage(argv[0], stdout);

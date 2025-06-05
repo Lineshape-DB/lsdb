@@ -23,6 +23,10 @@
 #ifndef LSDB_H
 #define LSDB_H
 
+#define LSDB_VERSION_MAJOR   1
+#define LSDB_VERSION_MINOR   0
+#define LSDB_VERSION_NANO    0
+
 #define LSDB_SUCCESS    0
 #define LSDB_FAILURE    1
 
@@ -104,6 +108,8 @@ typedef int (*lsdb_dataset_sink_t)(const lsdb_t *lsdb,
     const lsdb_dataset_t *cbdata, void *udata);
 typedef int (*lsdb_line_property_sink_t)(const lsdb_t *lsdb,
     const lsdb_line_property_t *l, void *udata);
+
+void lsdb_get_version_numbers(int *major, int *minor, int *nano);
 
 lsdb_t *lsdb_open(const char *fname, lsdb_access_t access);
 void lsdb_close(lsdb_t *lsdb);
