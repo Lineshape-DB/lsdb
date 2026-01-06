@@ -282,9 +282,10 @@ static void about(void)
 {
     int major, minor, nano;
     lsdb_get_version_numbers(&major, &minor, &nano);
-    fprintf(stdout, "lsdb-1.0 (using LSDB API v%d.%d.%d)\n",
+    fprintf(stdout, "lsdbu-1.1 (using LSDB API v%d.%d.%d)\n",
         major, minor, nano);
-    fprintf(stdout, "Copyright (C) 2025 Weizmann Institute of Science\n\n");
+    fprintf(stdout,
+        "Copyright (C) 2025,2026 Weizmann Institute of Science\n\n");
     fprintf(stdout, "Written by Evgeny Stambulchik\n");
 }
 
