@@ -38,6 +38,7 @@ enum {
     LSDBU_ACTION_ADD_RADIATOR,
     LSDBU_ACTION_ADD_LINE,
     LSDBU_ACTION_ADD_DATA,
+    LSDBU_ACTION_ADD_PROPERTY,
     LSDBU_ACTION_DEL_ENTITY,
     LSDBU_ACTION_GET_DATA,
     LSDBU_ACTION_INTERPOLATE
@@ -258,6 +259,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -e <id>               set environment ID [none]\n");
     fprintf(out, "  -r <id>               set radiator ID [none]\n");
     fprintf(out, "  -l <id>               set line ID [none]\n");
+    fprintf(out, "  -t <id>               set line property ID [none]\n");
     fprintf(out, "  -n <n>                set electron density to n/cc [0]\n");
     fprintf(out, "  -T <T>                set temperature to T eV [0]\n");
     fprintf(out, "  -p                    print interpolated lineshape\n");
@@ -269,6 +271,7 @@ static void usage(const char *arg0, FILE *out)
     fprintf(out, "  -R <sym,A,Zsp,M>      add a radiator\n");
     fprintf(out, "  -L <name,w0>          add a line\n");
     fprintf(out, "  -D <filename>         add a dataset\n");
+    fprintf(out, "  -P <name,value>       add a line property\n");
     fprintf(out, "  -X                    delete an entity by its ID\n");
     fprintf(out, "  -v                    be more verbose (together with \"-i\")\n");
     fprintf(out, "  -V                    print version info and exit\n");
@@ -300,6 +303,7 @@ int main(int argc, char **argv)
     int ntoken = 0;
     const char *mname = NULL, *ename = NULL, *mdescr = "", *edescr = "";
     const char *symbol = NULL, *lname = NULL;
+    const char *pname = NULL, *pvalue = NULL;
     int anum = 0, zsp = 0;
     double mass = 0, w0 = 0, *x = NULL, *y = NULL;
     size_t len;
@@ -312,8 +316,8 @@ int main(int argc, char **argv)
     lsdbu->fp_out = stdout;
     lsdbu->verbose = false;
 
-    while ((opt = getopt(argc, argv, "id:o:m:e:r:l:n:T:pcIU:M:E:R:L:D:XvVh"))
-        != -1) {
+    while ((opt = getopt(argc, argv,
+        "id:o:m:e:r:l:t:n:T:pcIU:M:E:R:L:D:P:XvVh")) != -1) {
         switch (opt) {
         case 'i':
             action = LSDBU_ACTION_INFO;
@@ -357,6 +361,14 @@ int main(int argc, char **argv)
                 exit(1);
             }
             lsdbu->lid = id;
+            break;
+        case 't':
+            id = atoi(optarg);
+            if (id <= 0) {
+                fprintf(stderr, "ID must be positive\n");
+                exit(1);
+            }
+            pid = id;
             break;
         case 'o':
             lsdbu->fp_out = fopen(optarg, "wb");
@@ -501,6 +513,26 @@ int main(int argc, char **argv)
                 exit(1);
             }
             break;
+        case 'P':
+            action = LSDBU_ACTION_ADD_PROPERTY;
+            token = strtok(optarg, ",");
+            ntoken = 1;
+            while (token != NULL) {
+                switch (ntoken) {
+                case 1:
+                    pname = token;
+                    break;
+                case 2:
+                    pvalue = token;
+                    break;
+                default:
+                    usage(argv[0], stderr);
+                    exit(1);
+                }
+                token = strtok(NULL, ",");
+                ntoken++;
+            }
+            break;
         case 'X':
             action = LSDBU_ACTION_DEL_ENTITY;
             break;
@@ -544,6 +576,7 @@ int main(int argc, char **argv)
     case LSDBU_ACTION_ADD_RADIATOR:
     case LSDBU_ACTION_ADD_LINE:
     case LSDBU_ACTION_ADD_DATA:
+    case LSDBU_ACTION_ADD_PROPERTY:
     case LSDBU_ACTION_DEL_ENTITY:
         db_access = LSDB_ACCESS_RW;
         break;
@@ -636,6 +669,20 @@ int main(int argc, char **argv)
             OK = false;
         }
         fclose(fp_f);
+    } else
+    if (action == LSDBU_ACTION_ADD_PROPERTY) {
+        if (lsdbu->lid == 0) {
+            fprintf(stderr, "Line ID must be defined\n");
+            OK = false;
+        } else {
+            pid = lsdb_add_line_property(lsdb, lsdbu->lid, pname, pvalue);
+            if (pid > 0) {
+                fprintf(lsdbu->fp_out, "OK: id = %ld\n", pid);
+            } else {
+                fprintf(stderr, "Adding line property failed\n");
+                OK = false;
+            }
+        }
     } else
     if (action == LSDBU_ACTION_DEL_ENTITY) {
         if (pid > 0) {
